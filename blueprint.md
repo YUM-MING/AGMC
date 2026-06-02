@@ -20,17 +20,21 @@ AI Game Maker Company (AGMC) is a 2D office-themed visual production environment
 1.  **Project Infrastructure:**
     - Install `react-router-dom` for navigation.
     - Set up basic folder structure (`src/components`, `src/pages`, `src/styles`).
+    - **Installed `phaser` for 2D game environment.**
 2.  **Base UI & Layout:**
     - Create a main `AppLayout` with a modern, "office-style" navigation bar.
     - Implement a landing page reflecting the AGMC vision.
 3.  **2D Office Environment (Initial):**
-    - Set up a basic canvas or grid-based system for the 2D office view.
-    - Implement a simple avatar control system.
+    - **Implemented a Phaser-based 2D office with an interactive avatar.**
+    - **Set up 4 specialized departments: Strategy, Content, Engineering, and Ops.**
+    - Each department has a unique interaction zone and AI representative.
 
 ---
 
 ## **Project History & Evolution**
-### **Version 0.1.0**
-- Project concept defined.
-- Initial blueprint created.
-- Basic React infrastructure ready.
+### **Version 0.2.0**
+- **Phaser.js Integration:** 2D office world implemented.
+- **Multi-Department Setup:** 4 core departments (Strategy, Content, Engineering, Ops) visualized.
+- **Avatar System:** Keyboard-controlled avatar with collision and interaction detection.
+- **UI Improvements:** HUD for AI dialogue and navigation back to lobby.
+

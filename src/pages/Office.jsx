@@ -1,137 +1,183 @@
-import { useState, useEffect, useRef } from 'react';
-import { getAIResponse } from '../services/ai';
+import React, { useEffect } from 'react';
+import Phaser from 'phaser';
+import { useNavigate } from 'react-router-dom';
 
-function Office() {
-  const [messages, setMessages] = useState([
-    { role: 'ai', content: '회장님, 안녕하십니까. 어떤 프로젝트를 시작할까요?' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const scrollRef = useRef(null);
+// 1. Phaser Scene Definition
+class OfficeScene extends Phaser.Scene {
+  constructor() {
+    super('OfficeScene');
+    this.player = null;
+    this.cursors = null;
+    this.dialogueText = null;
+    this.departments = [
+      { id: 'strategy', name: '전략기획실', color: 0x00a8ff, x: 100, y: 100, ai: 'GPT-4o' },
+      { id: 'content', name: '콘텐츠제작실', color: 0xe84118, x: 600, y: 100, ai: 'DALL-E 3' },
+      { id: 'engineering', name: '기술개발국', color: 0x4cd137, x: 100, y: 400, ai: 'Claude 3.5' },
+      { id: 'ops', name: '운영지원팀', color: 0xfbc531, x: 600, y: 400, ai: 'Gemini 1.5' },
+    ];
+  }
+
+  preload() {
+    this.load.spritesheet('player', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
+  }
+
+  create() {
+    // Background Grid
+    this.add.grid(400, 300, 800, 600, 32, 32, 0x1e1e1e).setOrigin(0.5);
+
+    // Create Department Zones
+    this.departments.forEach(dept => {
+      const graphics = this.add.graphics();
+      graphics.fillStyle(dept.color, 0.1);
+      graphics.fillRect(dept.x, dept.y, 180, 120);
+      graphics.lineStyle(2, dept.color, 0.8);
+      graphics.strokeRect(dept.x, dept.y, 180, 120);
+
+      this.add.text(dept.x + 10, dept.y + 10, `${dept.name}\n(${dept.ai})`, { 
+        font: "bold 14px Arial", 
+        fill: Phaser.Display.Color.IntegerToColor(dept.color).rgba 
+      });
+
+      const zone = this.add.zone(dept.x + 90, dept.y + 60, 180, 120);
+      this.physics.add.existing(zone, true);
+
+      this.physics.add.overlap(this.player || {}, zone, () => {
+        this.updateDialogue(`🤖 ${dept.name} AI: '반갑습니다! ${dept.ai}가 업무를 대기 중입니다.'`, dept.color);
+      });
+      
+      dept.zone = zone;
+    });
+
+    // Dialogue UI
+    this.dialogueText = this.add.text(400, 560, "각 부서로 이동하여 AI 팀장님들과 대화하세요.", {
+      font: "15px Arial",
+      fill: "#ffffff",
+      backgroundColor: "#000000",
+      padding: { x: 20, y: 10 },
+      align: 'center',
+      fixedWidth: 700
+    }).setOrigin(0.5).setAlpha(0.8);
+
+    // Player
+    this.player = this.physics.add.sprite(400, 300, 'player');
+    this.player.setCollideWorldBounds(true);
+
+    // Animations
+    this.anims.create({
+      key: 'left',
+      frames: this.anims.generateFrameNumbers('player', { start: 0, end: 3 }),
+      frameRate: 10,
+      repeat: -1
+    });
+    this.anims.create({
+      key: 'turn',
+      frames: [ { key: 'player', frame: 4 } ],
+      frameRate: 20
+    });
+    this.anims.create({
+      key: 'right',
+      frames: this.anims.generateFrameNumbers('player', { start: 5, end: 8 }),
+      frameRate: 10,
+      repeat: -1
+    });
+
+    // Re-bind overlap after player creation
+    this.departments.forEach(dept => {
+      this.physics.add.overlap(this.player, dept.zone, () => {
+        this.updateDialogue(`🤖 ${dept.name} AI: '반갑습니다! ${dept.ai}가 업무를 대기 중입니다.'`, dept.color);
+      }, null, this);
+    });
+
+    this.cursors = this.input.keyboard.createCursorKeys();
+  }
+
+  updateDialogue(text, color) {
+    this.dialogueText.setText(text);
+    const colorHex = Phaser.Display.Color.IntegerToColor(color).toCSS();
+    this.dialogueText.setBackgroundColor(colorHex);
+  }
+
+  update() {
+    this.player.setVelocity(0);
+
+    const speed = 200;
+
+    if (this.cursors.left.isDown) {
+      this.player.setVelocityX(-speed);
+      this.player.anims.play('left', true);
+    } else if (this.cursors.right.isDown) {
+      this.player.setVelocityX(speed);
+      this.player.anims.play('right', true);
+    } else if (this.cursors.up.isDown) {
+      this.player.setVelocityY(-speed);
+    } else if (this.cursors.down.isDown) {
+      this.player.setVelocityY(speed);
+    } else {
+      this.player.anims.play('turn');
+    }
+
+    if (this.player.body.velocity.x === 0 && this.player.body.velocity.y === 0) {
+      this.player.anims.play('turn');
+    }
+  }
+}
+
+// 2. React Component
+export default function Office() {
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
+    const config = {
+      type: Phaser.AUTO,
+      width: 800,
+      height: 600,
+      parent: 'agmc-office-container',
+      physics: {
+        default: 'arcade',
+        arcade: { gravity: { y: 0 } }
+      },
+      scene: [OfficeScene]
+    };
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    
-    const userMessage = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInput('');
-    setIsTyping(true);
+    const game = new Phaser.Game(config);
 
-    const apiMessages = newMessages.map(msg => ({
-      role: msg.role === 'ai' ? 'assistant' : 'user',
-      content: msg.content
-    }));
-
-    const aiContent = await getAIResponse(apiMessages);
-    
-    setMessages(prev => [...prev, { 
-      role: 'ai', 
-      content: aiContent 
-    }]);
-    setIsTyping(false);
-  };
+    return () => {
+      game.destroy(true);
+    };
+  }, []);
 
   return (
-    <div className="office-split-layout">
-      <div className="game-bg"></div>
-      
-      {/* Left Side: Stable 2D AI Workspace */}
-      <div className="ai-character-container" style={{ borderRight: '2px solid var(--accent-color)', background: 'rgba(15, 23, 42, 0.5)' }}>
-        <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 10 }}>
-          <h2 style={{ color: 'var(--accent-color)', fontSize: '2.5rem', margin: 0, textShadow: '0 0 10px var(--accent-color)' }}>전략기획실</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', margin: 0 }}>OFFICE_STATUS: ONLINE</p>
-        </div>
-
-        {/* AI Character Sprite - Stable Positioning */}
-        <div style={{ position: 'relative', width: '300px', height: '300px' }}>
-          <div className={`ai-sprite ${isTyping ? 'ai-typing' : ''}`} style={{ bottom: '100px' }}>
-            <div style={{ position: 'absolute', top: '20%', left: '20%', width: '10px', height: '10px', background: '#000' }}></div>
-            <div style={{ position: 'absolute', top: '20%', right: '20%', width: '10px', height: '10px', background: '#000' }}></div>
-          </div>
-          <div className="ai-desk" style={{ bottom: '0', left: '50%', transform: 'translateX(-50%)' }}>
-            <div style={{ position: 'absolute', top: '-40px', left: '50%', transform: 'translateX(-50%)', width: '80px', height: '50px', background: 'rgba(56, 189, 248, 0.2)', border: '2px solid var(--accent-color)', boxShadow: '0 0 15px var(--accent-color)', animation: 'float 3s infinite' }}></div>
-          </div>
-        </div>
-
-        {/* Floor Line */}
-        <div style={{ position: 'absolute', bottom: '20%', width: '100%', height: '4px', background: 'rgba(56, 189, 248, 0.5)', boxShadow: '0 0 10px var(--accent-color)' }}></div>
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      backgroundColor: '#111',
+      color: '#fff',
+      fontFamily: 'Arial, sans-serif'
+    }}>
+      <div style={{ marginBottom: '10px', display: 'flex', gap: '20px', alignItems: 'center' }}>
+        <h2 style={{ margin: 0, color: '#00a8ff' }}>AGMC Headquarters</h2>
+        <button 
+          onClick={() => navigate('/')}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: 'transparent',
+            border: '1px solid #555',
+            color: '#ccc',
+            cursor: 'pointer',
+            borderRadius: '4px'
+          }}
+        >
+          Exit to Lobby
+        </button>
       </div>
-
-      {/* Right Side: Professional Chat Terminal */}
-      <div className="chat-terminal">
-        <div style={{ padding: '1.5rem', borderBottom: '2px solid var(--accent-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.8)' }}>
-          <span style={{ color: 'var(--accent-color)', fontSize: '1.5rem', fontWeight: 'bold' }}>SYSTEM_LOG :: REPORT_MODE</span>
-          <button className="menu-item" style={{ fontSize: '1.2rem', padding: '0.2rem 1rem' }} onClick={() => window.history.back()}>
-            EXIT
-          </button>
-        </div>
-
-        {/* Corrected Message Log Container */}
-        <div ref={scrollRef} className="message-log-container">
-          {messages.map((msg, i) => (
-            <div key={i} className="message-bubble" style={{ 
-              alignSelf: msg.role === 'ai' ? 'flex-start' : 'flex-end',
-              maxWidth: '95%',
-              color: msg.role === 'ai' ? 'var(--text-main)' : 'var(--accent-color)',
-              borderLeft: msg.role === 'ai' ? '4px solid var(--accent-color)' : 'none',
-              borderRight: msg.role === 'user' ? '4px solid #fff' : 'none',
-              whiteSpace: 'pre-wrap' /* Respect newlines from AI */
-            }}>
-              <div style={{ fontSize: '0.8rem', color: 'var(--accent-color)', marginBottom: '0.5rem', opacity: 0.7, fontFamily: 'monospace' }}>
-                {msg.role === 'ai' ? 'REPORT_FROM: AI_LEAD' : 'COMMAND_FROM: CHAIRMAN'}
-              </div>
-              {msg.content}
-            </div>
-          ))}
-          {isTyping && (
-            <div style={{ color: 'var(--accent-color)', fontSize: '1.2rem', padding: '1rem', fontStyle: 'italic' }}>AI 팀장님이 보고서를 작성 중입니다...</div>
-          )}
-        </div>
-
-        {/* Input Area */}
-        <div style={{ borderTop: '2px solid var(--accent-color)', padding: '1.5rem', display: 'flex', gap: '1rem', background: 'rgba(15, 23, 42, 0.9)' }}>
-          <span style={{ fontSize: '2rem', color: 'var(--accent-color)' }}>{'>'}</span>
-          <input 
-            type="text" 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-            placeholder="지시 사항을 입력하세요..."
-            style={{ 
-              flex: 1, 
-              background: 'none', 
-              border: 'none', 
-              color: '#fff', 
-              fontSize: '1.5rem', 
-              fontFamily: 'var(--game-font)',
-              outline: 'none'
-            }}
-            autoFocus
-          />
-        </div>
+      <div id="agmc-office-container" style={{ borderRadius: '8px', overflow: 'hidden', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}></div>
+      <div style={{ marginTop: '10px', color: '#888', fontSize: '12px' }}>
+        Use Arrow Keys to move your avatar.
       </div>
-
-      {/* CRT Scanline Effect */}
-      <div style={{ 
-        position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        width: '100%', 
-        height: '100%', 
-        background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.05) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.02))',
-        backgroundSize: '100% 4px, 3px 100%',
-        pointerEvents: 'none',
-        zIndex: 10
-      }}></div>
     </div>
   );
 }
-
-export default Office;
