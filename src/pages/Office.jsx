@@ -10,10 +10,51 @@ class OfficeScene extends Phaser.Scene {
     this.cursors = null;
     this.dialogueText = null;
     this.departments = [
-      { id: 'strategy', name: '전략기획실', color: 0x00a8ff, colorStr: '#00a8ff', x: 100, y: 100, ai: 'GPT-4o' },
-      { id: 'content', name: '콘텐츠제작실', color: 0xe84118, colorStr: '#e84118', x: 600, y: 100, ai: 'DALL-E 3' },
-      { id: 'engineering', name: '기술개발국', color: 0x4cd137, colorStr: '#4cd137', x: 100, y: 400, ai: 'Claude 3.5' },
-      { id: 'ops', name: '운영지원팀', color: 0xfbc531, colorStr: '#fbc531', x: 600, y: 400, ai: 'Gemini 1.5' },
+      { 
+        id: 'strategy', 
+        name: '1. 전략기획실', 
+        color: 0x00a8ff, 
+        colorStr: '#00a8ff', 
+        x: 50, y: 50, 
+        ai: 'Concept & Strategy AI',
+        msg: "🤖 전략기획실: '회장님, 시장 트렌드를 분석하여 흥행 가능성이 높은 기획안을 준비했습니다.'"
+      },
+      { 
+        id: 'content', 
+        name: '2. 콘텐츠 개발부', 
+        color: 0xe84118, 
+        colorStr: '#e84118', 
+        x: 570, y: 50, 
+        ai: 'Creative Content AI',
+        msg: "🤖 콘텐츠 개발부: '시나리오와 아트, 사운드 팀이 창의적인 작업을 대기 중입니다.'"
+      },
+      { 
+        id: 'engineering', 
+        name: '3. 기술 구현부', 
+        color: 0x4cd137, 
+        colorStr: '#4cd137', 
+        x: 50, y: 380, 
+        ai: 'Technical Engineering AI',
+        msg: "🤖 기술 구현부: '최적화된 로직과 HRI 설계를 통해 완벽한 엔진을 구축하겠습니다.'"
+      },
+      { 
+        id: 'ops', 
+        name: '4. 라이브 운영부', 
+        color: 0xfbc531, 
+        colorStr: '#fbc531', 
+        x: 570, y: 380, 
+        ai: 'Live Ops AI',
+        msg: "🤖 라이브 운영부: '유저들과 소통하며 최상의 밸런스를 유지하도록 관리하겠습니다.'"
+      },
+      { 
+        id: 'analytics', 
+        name: '5. 데이터 인사이트 부', 
+        color: 0x9c88ff, 
+        colorStr: '#9c88ff', 
+        x: 310, y: 215, 
+        ai: 'Data & Analytics AI',
+        msg: "🤖 데이터 인사이트 부: '모든 지표를 대시보드화하여 다음 업데이트 방향을 보고드립니다.'"
+      },
     ];
   }
 
@@ -29,33 +70,34 @@ class OfficeScene extends Phaser.Scene {
     this.departments.forEach(dept => {
       const graphics = this.add.graphics();
       graphics.fillStyle(dept.color, 0.1);
-      graphics.fillRect(dept.x, dept.y, 180, 120);
+      graphics.fillRect(dept.x, dept.y, 180, 150);
       graphics.lineStyle(2, dept.color, 0.8);
-      graphics.strokeRect(dept.x, dept.y, 180, 120);
+      graphics.strokeRect(dept.x, dept.y, 180, 150);
 
-      this.add.text(dept.x + 10, dept.y + 10, `${dept.name}\n(${dept.ai})`, { 
-        font: "bold 14px Arial", 
-        fill: dept.colorStr
+      this.add.text(dept.x + 10, dept.y + 10, `${dept.name}\n\n[${dept.ai}]`, { 
+        font: "bold 13px Arial", 
+        fill: dept.colorStr,
+        wordWrap: { width: 160 }
       });
 
-      const zone = this.add.zone(dept.x + 90, dept.y + 60, 180, 120);
+      const zone = this.add.zone(dept.x + 90, dept.y + 75, 180, 150);
       this.physics.add.existing(zone, true);
       
       dept.zone = zone;
     });
 
     // Dialogue UI
-    this.dialogueText = this.add.text(400, 560, "각 부서로 이동하여 AI 팀장님들과 대화하세요.", {
+    this.dialogueText = this.add.text(400, 560, "회장님, 원하시는 부서로 이동하여 업무를 지시해 주세요.", {
       font: "15px Arial",
       fill: "#ffffff",
       backgroundColor: "#000000",
       padding: { x: 20, y: 10 },
       align: 'center',
-      fixedWidth: 700
+      fixedWidth: 750
     }).setOrigin(0.5).setAlpha(0.8);
 
     // Player
-    this.player = this.physics.add.sprite(400, 300, 'player');
+    this.player = this.physics.add.sprite(400, 500, 'player');
     this.player.setCollideWorldBounds(true);
 
     // Animations
@@ -80,7 +122,7 @@ class OfficeScene extends Phaser.Scene {
     // Interaction Overlap
     this.departments.forEach(dept => {
       this.physics.add.overlap(this.player, dept.zone, () => {
-        this.updateDialogue(`🤖 ${dept.name} AI: '반갑습니다! ${dept.ai}가 업무를 대기 중입니다.'`, dept.colorStr);
+        this.updateDialogue(dept.msg, dept.colorStr);
       }, null, this);
     });
 
@@ -150,29 +192,37 @@ export default function Office() {
       flexDirection: 'column',
       justifyContent: 'center', 
       alignItems: 'center', 
-      backgroundColor: '#111',
+      backgroundColor: '#0a0a0a',
       color: '#fff',
       fontFamily: 'Arial, sans-serif'
     }}>
       <div style={{ marginBottom: '10px', display: 'flex', gap: '20px', alignItems: 'center' }}>
-        <h2 style={{ margin: 0, color: '#00a8ff' }}>AGMC Headquarters</h2>
+        <h2 style={{ margin: 0, color: '#00a8ff', letterSpacing: '2px' }}>AGMC HEADQUARTERS</h2>
         <button 
           onClick={() => navigate('/')}
           style={{
             padding: '8px 16px',
             backgroundColor: 'transparent',
-            border: '1px solid #555',
-            color: '#ccc',
+            border: '1px solid #333',
+            color: '#888',
             cursor: 'pointer',
-            borderRadius: '4px'
+            borderRadius: '4px',
+            transition: 'all 0.3s'
           }}
+          onMouseOver={(e) => e.target.style.borderColor = '#00a8ff'}
+          onMouseOut={(e) => e.target.style.borderColor = '#333'}
         >
           Exit to Lobby
         </button>
       </div>
-      <div id="agmc-office-container" style={{ borderRadius: '8px', overflow: 'hidden', boxShadow: '0 0 20px rgba(0,0,0,0.5)' }}></div>
-      <div style={{ marginTop: '10px', color: '#888', fontSize: '12px' }}>
-        Use Arrow Keys to move your avatar.
+      <div id="agmc-office-container" style={{ 
+        borderRadius: '12px', 
+        overflow: 'hidden', 
+        boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+        border: '1px solid #222'
+      }}></div>
+      <div style={{ marginTop: '15px', color: '#555', fontSize: '12px', textAlign: 'center' }}>
+        [회장님 전용 집무실] 방향키를 사용하여 아바타를 이동하고 각 부서의 보고를 확인하세요.
       </div>
     </div>
   );
