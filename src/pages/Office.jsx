@@ -10,10 +10,10 @@ class OfficeScene extends Phaser.Scene {
     this.cursors = null;
     this.dialogueText = null;
     this.departments = [
-      { id: 'strategy', name: '전략기획실', color: 0x00a8ff, x: 100, y: 100, ai: 'GPT-4o' },
-      { id: 'content', name: '콘텐츠제작실', color: 0xe84118, x: 600, y: 100, ai: 'DALL-E 3' },
-      { id: 'engineering', name: '기술개발국', color: 0x4cd137, x: 100, y: 400, ai: 'Claude 3.5' },
-      { id: 'ops', name: '운영지원팀', color: 0xfbc531, x: 600, y: 400, ai: 'Gemini 1.5' },
+      { id: 'strategy', name: '전략기획실', color: 0x00a8ff, colorStr: '#00a8ff', x: 100, y: 100, ai: 'GPT-4o' },
+      { id: 'content', name: '콘텐츠제작실', color: 0xe84118, colorStr: '#e84118', x: 600, y: 100, ai: 'DALL-E 3' },
+      { id: 'engineering', name: '기술개발국', color: 0x4cd137, colorStr: '#4cd137', x: 100, y: 400, ai: 'Claude 3.5' },
+      { id: 'ops', name: '운영지원팀', color: 0xfbc531, colorStr: '#fbc531', x: 600, y: 400, ai: 'Gemini 1.5' },
     ];
   }
 
@@ -35,15 +35,11 @@ class OfficeScene extends Phaser.Scene {
 
       this.add.text(dept.x + 10, dept.y + 10, `${dept.name}\n(${dept.ai})`, { 
         font: "bold 14px Arial", 
-        fill: Phaser.Display.Color.IntegerToColor(dept.color).rgba 
+        fill: dept.colorStr
       });
 
       const zone = this.add.zone(dept.x + 90, dept.y + 60, 180, 120);
       this.physics.add.existing(zone, true);
-
-      this.physics.add.overlap(this.player || {}, zone, () => {
-        this.updateDialogue(`🤖 ${dept.name} AI: '반갑습니다! ${dept.ai}가 업무를 대기 중입니다.'`, dept.color);
-      });
       
       dept.zone = zone;
     });
@@ -81,25 +77,25 @@ class OfficeScene extends Phaser.Scene {
       repeat: -1
     });
 
-    // Re-bind overlap after player creation
+    // Interaction Overlap
     this.departments.forEach(dept => {
       this.physics.add.overlap(this.player, dept.zone, () => {
-        this.updateDialogue(`🤖 ${dept.name} AI: '반갑습니다! ${dept.ai}가 업무를 대기 중입니다.'`, dept.color);
+        this.updateDialogue(`🤖 ${dept.name} AI: '반갑습니다! ${dept.ai}가 업무를 대기 중입니다.'`, dept.colorStr);
       }, null, this);
     });
 
     this.cursors = this.input.keyboard.createCursorKeys();
   }
 
-  updateDialogue(text, color) {
+  updateDialogue(text, colorStr) {
     this.dialogueText.setText(text);
-    const colorHex = Phaser.Display.Color.IntegerToColor(color).toCSS();
-    this.dialogueText.setBackgroundColor(colorHex);
+    this.dialogueText.setBackgroundColor(colorStr);
   }
 
   update() {
-    this.player.setVelocity(0);
+    if (!this.player || !this.player.body) return;
 
+    this.player.setVelocity(0);
     const speed = 200;
 
     if (this.cursors.left.isDown) {
