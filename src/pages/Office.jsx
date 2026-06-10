@@ -6,11 +6,11 @@ import { useProjectStore } from '../store/projectStore';
 
 // 부서별 자산 매핑
 const DEPT_ASSETS = {
-  strategy: { key: 'char_strategy', path: '/src/assets/전략기획부_캐릭터.png' },
-  content: { key: 'char_content', path: '/src/assets/콘텐츠개발부_캐릭터.png' },
-  engineering: { key: 'char_engineering', path: '/src/assets/기술구현부_캐릭터.png' },
-  ops: { key: 'char_ops', path: '/src/assets/라이브운영부_캐릭터.png' },
-  analytics: { key: 'char_analytics', path: '/src/assets/데이터인사이드부_캐릭터.png' }
+  strategy: { key: 'char_strategy', path: '/src/assets/char_strategy.png' },
+  content: { key: 'char_content', path: '/src/assets/char_content.png' },
+  engineering: { key: 'char_engineering', path: '/src/assets/char_engineering.png' },
+  ops: { key: 'char_ops', path: '/src/assets/char_ops.png' },
+  analytics: { key: 'char_analytics', path: '/src/assets/char_analytics.png' }
 };
 
 class OfficeScene extends Phaser.Scene {
@@ -42,7 +42,7 @@ class OfficeScene extends Phaser.Scene {
 
   preload() {
     this.load.spritesheet('player', 'https://labs.phaser.io/assets/sprites/dude.png', { frameWidth: 32, frameHeight: 48 });
-    this.load.image('office_bg', '/src/assets/배경.png');
+    this.load.image('office_bg', '/src/assets/background.png');
     Object.values(DEPT_ASSETS).forEach(asset => {
       this.load.image(asset.key, asset.path);
     });
