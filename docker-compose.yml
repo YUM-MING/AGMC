@@ -1,0 +1,12 @@
+services:
+  agmc:
+    build:
+      context: .
+      args:
+        - VITE_OPENAI_API_KEY=${VITE_OPENAI_API_KEY}
+    container_name: agmc-app
+    restart: always
+    ports:
+      - "7860:7860"
+    env_file:
+      - .env

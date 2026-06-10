@@ -12,31 +12,38 @@ AI Game Maker Company (AGMC) is a 2D office-themed visual production environment
 
 ## **Organization Structure (5 Core Departments)**
 
-### **1. 전략기획실 (Concept & Strategy AI)**
+### **1. 전략기획실 (Concept Specialist)**
 회장님의 의도를 가장 먼저 파악하고 게임의 큰 그림을 그리는 부서입니다.
-- **역할:** 시장 트렌드 분석, 게임 컨셉 기획, 수익 모델(BM) 설계.
-- **특징:** 수만 개의 성공/실패 사례 데이터를 학습하여 흥행 가능성이 높은 기획안을 회장님께 보고합니다.
+- **역할:** 게임 컨셉 기획, 장르 설정, 핵심 재미(Core Loop) 설계.
+- **특징:** 수익 모델(BM)은 배제하고 순수하게 '게임의 재미'와 '혁신성'에만 집중하여 기획안을 보고합니다.
 
-### **2. 콘텐츠 개발부 (Creative Content AI)**
-게임의 살을 붙이는 창의적인 작업을 담당합니다.
+### **2. 콘텐츠 개발부 (Visual & Story Director)**
+게임의 살을 붙이는 창의적인 작업을 담당하며, 비주얼의 정체성을 부여합니다.
 - **시나리오 팀:** 세계관 설정, 퀘스트 스크립트, 캐릭터 대사 생성.
-- **그래픽/아트 팀:** 캐릭터 디자인, 배경 원화, 3D 모델링 및 애니메이션 자동 생성.
-- **사운드 팀:** 배경음악(BGM), 효과음, 캐릭터 보이스(TTS) 생성.
+- **비주얼 가이드 팀:** 캐릭터 디자인 및 배경 스타일을 구체적인 언어로 묘사하여 기술구현부가 코드로 구현할 수 있도록 돕습니다. (색상, 형태, 애니메이션 느낌 등 상세 기술)
+- **이미지 생성 (DALL-E 3 연동):** 회장님이 입력한 묘사를 바탕으로 OpenAI DALL-E 3를 통해 실제 게임 에셋 이미지를 즉석에서 생성합니다. 생성된 이미지는 에셋 갤러리에 저장됩니다.
+- **사운드 팀:** 배경음악(BGM), 효과음 컨셉 설정.
 
-### **3. 기술 구현부 (Technical Engineering AI)**
+### **3. 기술 구현부 (Lead Developer)**
 실제로 게임이 돌아가게 만드는 '엔진' 역할을 합니다.
-- **코드 제너레이션 팀:** 최적화된 게임 로직 프로그래밍 및 클라이언트/서버 구축.
-- **QA & 디버깅 팀:** 365일 실시간으로 게임을 플레이하며 버그를 찾아내고 즉시 수정.
-- **HRI(인간-로봇 상호작용) 특화팀:** 플레이어의 행동을 분석해 게임 속 NPC가 유저와 자연스럽게 교감하도록 설계.
+- **코드 제너레이션 팀:** Phaser.js를 활용하여 플레이 가능한 독립형 HTML 코드를 작성합니다.
+- **QA & 디버깅 팀:** 생성된 코드의 오류를 점검하고 즉각 수정.
 
-### **4. 라이브 운영부 (Live Ops AI)**
-출시 후 유저들과 소통하며 게임을 키워나가는 부서입니다.
-- **커뮤니티 매니저(CM) AI:** 유저 문의 응대, SNS 관리, 이벤트 기획 및 실행.
-- **밸런싱 팀:** 유저들의 플레이 데이터를 실시간 분석하여 캐릭터나 아이템 수치를 즉각 조정.
+### **4. 라이브 운영부 (Balance Optimizer)**
+출시 후 유저들이 게임을 더 즐겁게 플레이할 수 있도록 조정하는 부서입니다.
+- **밸런싱 팀:** 난이도 조절, 레벨 디자인 개선, 유저 편의성(UX) 강화 제안.
+- **수익 모델 배제:** 유료 결제 유도보다는 '플레이 경험의 질'을 높이는 데 집중합니다.
 
-### **5. 데이터 인사이트 부 (Data & Analytics AI)**
-회장님의 의사결정을 돕는 '브레인'입니다.
-- **역할:** 모든 지표를 대시보드화하여 보고하고, 다음 업데이트 방향을 제안.
+### **5. 데이터 인사이트 부 (Fun Factor Analyst)**
+회장님의 의사결정을 돕는 '브레인'으로, 게임의 재미를 수치화합니다.
+- **역할:** 게임의 재미 요소 분석, 난이도 곡선 시각화, 플레이 테스트 보고서 제공.
+
+## **🚀 온보딩 가이드 시스템**
+사용자가 처음 프로젝트를 시작할 때 당황하지 않도록 단계별 가이드를 제공합니다.
+1.  **1단계 (전략기획실):** 게임의 장르와 핵심 아이디어를 결정합니다.
+2.  **2단계 (콘텐츠개발부):** 결정된 컨셉에 어울리는 세계관과 구체적인 비주얼 스타일을 설정합니다. (필요시 DALL-E를 통해 이미지를 생성합니다.)
+3.  **3단계 (기술구현부):** 기획안을 바탕으로 실제 플레이 가능한 게임 코드를 생성합니다.
+4.  **4단계 (운영/분석):** 생성된 게임을 플레이해보고 난이도를 조절하거나 재미 요소를 보강합니다.
 
 ## **Visual & Design Language**
 - **Theme:** Modern 2D Office Aesthetic.
@@ -56,12 +63,8 @@ AI Game Maker Company (AGMC) is a 2D office-themed visual production environment
     - Implemented a Phaser-based 2D office with an interactive avatar.
     - **Set up all 5 specialized departments: Strategy, Content, Engineering, Ops, and Data Insights.**
     - Each department has a unique interaction zone and AI representative.
-
----
-
-## **Project History & Evolution**
-### **Version 0.3.0**
-- **Full Department Integration:** All 5 departments defined by the user are now visualized in the office.
-- **Detailed Interaction:** Each department zone now provides specific reports and welcomes based on their refined roles.
-- **Visual Refinement:** Layout adjusted for 5 departments with enhanced UI styling.
-
+4.  **Save & Load System (Persistence):**
+    - **Zustand Persist Middleware:** Enabled automatic state saving to `localStorage`.
+    - **Generated Asset Gallery:** Stores and displays image URLs generated via DALL-E 3.
+    - **Export/Import:** Added functionality to download project data (including asset URLs) as `.json` and upload it back.
+    - **Dynamic Home Menu:** Context-aware menu buttons (Continue, New Project, Import).

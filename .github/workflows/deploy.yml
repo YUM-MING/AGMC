@@ -1,0 +1,46 @@
+name: Deploy to Oracle Cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Oracle Server via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: REPO_URL
+          script: |
+            set -e
+            # 프로젝트 폴더로 이동 (없으면 생성)
+            mkdir -p ~/agmc
+            cd ~/agmc
+            
+            # Git 초기화 및 업데이트
+            if [ ! -d .git ]; then
+              git init
+              git remote add origin "$REPO_URL" || git remote set-url origin "$REPO_URL"
+            fi
+            
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # .env 파일 확인 (없으면 시크릿에서 생성 - 최소한의 보안 권장)
+            # 실제로는 서버에 직접 vi .env로 만드는 것이 더 안전할 수 있음
+            if [ ! -f .env ]; then
+              echo "VITE_OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+              echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
+            fi
+            
+            # 도커 빌드 및 실행
+            docker compose up -d --build
