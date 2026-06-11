@@ -291,7 +291,7 @@ export default function Office() {
     setLoading(true);
 
     try {
-      const fullState = { projectName, projectData };
+      const fullState = { projectName, projectData, generatedAssets }; // 생성된 에셋 정보 추가 전달
       const reply = await requestAiTask(activeDept.id, instruction, fullState);
       setAiReply(reply);
       updateDeptData(activeDept.id, reply);
