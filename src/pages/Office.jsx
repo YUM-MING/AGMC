@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Phaser from 'phaser';
 import { useNavigate } from 'react-router-dom';
-import { requestAiTask, requestImageGeneration } from '../services/ai';
+import { requestAiTask, requestImageGeneration, GENRE_TEMPLATES } from '../services/ai';
 import { useProjectStore } from '../store/projectStore';
 
 // 부서별 자산 매핑
@@ -206,6 +206,15 @@ export default function Office() {
   const [imgLoading, setImgLoading] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [showGamePreview, setShowGamePreview] = useState(false);
+  const [previewImages, setPreviewImages] = useState([]); // 생성된 이미지 미리보기
+
+  // 보고서에서 에셋 관련 묘사만 추출하는 헬퍼
+  const extractedPrompts = activeDept?.id === 'content' && aiReply ? 
+    aiReply.split('\n')
+      .map(l => l.trim())
+      .filter(l => (l.startsWith('-') || l.startsWith('*') || /^\d+\./.test(l)) && l.length > 10)
+      .map(l => l.replace(/^[-*\d.]+\s*/, ''))
+    : [];
 
   useEffect(() => {
     // 모달이 켜지면 Phaser의 키보드 입력을 무시하도록 처리
@@ -235,6 +244,7 @@ export default function Office() {
       onOpenModal: (dept) => {
         setActiveDept(dept);
         setInstruction("");
+        setPreviewImages([]);
         // useProjectStore.getState()를 사용하여 최신 데이터를 가져옴
         const latestProjectData = useProjectStore.getState().projectData;
         setAiReply(latestProjectData[dept.id] || "");
@@ -263,15 +273,17 @@ export default function Office() {
     }
   };
 
-  const handleGenerateImage = async () => {
-    if (!instruction.trim()) return alert("이미지 생성을 위한 설명을 입력하세요.");
+  const handleGenerateImage = async (customPrompt) => {
+    const targetPrompt = typeof customPrompt === 'string' ? customPrompt : instruction;
+    if (!targetPrompt.trim()) return alert("이미지 생성을 위한 설명을 입력하세요.");
+    
     setImgLoading(true);
+    setPreviewImages([]);
 
     try {
-      const url = await requestImageGeneration(instruction);
-      const newAsset = { id: Date.now(), url, description: instruction };
-      addAsset(newAsset);
-      setAiReply(`🎨 이미지가 생성되었습니다!\n\n설명: ${instruction}\nURL: ${url}`);
+      // 2개의 시안을 생성하여 선택할 수 있게 함
+      const urls = await requestImageGeneration(targetPrompt, 2); 
+      setPreviewImages(urls.map(url => ({ url, description: targetPrompt })));
     } catch (error) {
       console.error(error);
       alert("이미지 생성에 실패했습니다: " + (error.message || "알 수 없는 오류"));
@@ -280,10 +292,18 @@ export default function Office() {
     }
   };
 
+  const applySelectedImage = (imgObj) => {
+    const newAsset = { id: Date.now(), url: imgObj.url, description: imgObj.description };
+    addAsset(newAsset);
+    setPreviewImages([]);
+    alert("에셋이 프로젝트에 성공적으로 등록되었습니다!");
+  };
+
   const handleClose = () => {
     setActiveDept(null);
     setInstruction("");
     setAiReply("");
+    setPreviewImages([]);
   };
 
   const handleReset = () => {
@@ -298,6 +318,11 @@ export default function Office() {
     setNewProjectName("");
   };
 
+  const applyTemplate = (templateKey) => {
+    const template = GENRE_TEMPLATES[templateKey];
+    setInstruction(`[${template.name} 템플릿 사용]\n이 템플릿을 기반으로 게임 로직을 작성해줘. 우리 게임의 컨셉과 비주얼 에셋에 맞게 기능을 수정하고 살을 붙여줘.\n\n참고 코드:\n\`\`\`javascript\n${template.code}\n\`\`\``);
+  };
+
   // 키보드 이벤트 버블링 방지 헬퍼
   const stopPropagation = (e) => e.stopPropagation();
 
@@ -308,7 +333,11 @@ export default function Office() {
     
     // AI가 작성한 순수 Javascript (MainScene 클래스)만 추출
     const match = code.match(/```javascript\n?([\s\S]*?)```/) || code.match(/```js\n?([\s\S]*?)```/) || code.match(/```([\s\S]*?)```/);
-    const jsCode = match ? match[1].trim() : code;
+    let jsCode = match ? match[1].trim() : code;
+
+    // AI가 실수로 모듈 export 문법을 썼을 경우 제거 (브라우저 script 태그 삽입 오류 방지)
+    jsCode = jsCode.replace(/export\s+default\s+class/g, 'class');
+    jsCode = jsCode.replace(/export\s+class/g, 'class');
 
     // 프론트엔드에 미리 심어둔 베이스 프레임워크 (토큰 절약의 핵심)
     return `
@@ -337,7 +366,7 @@ export default function Office() {
           // --- Pre-defined Game Framework ---
           window.onload = () => {
             if (typeof MainScene === 'undefined') {
-              document.getElementById('game-container').innerHTML = '<h2>MainScene 클래스가 정의되지 않았습니다.</h2>';
+              document.getElementById('game-container').innerHTML = '<h2>MainScene 클래스가 정의되지 않았습니다.</h2><p>AI가 올바른 클래스 이름으로 코드를 작성했는지 확인하세요.</p>';
               return;
             }
             
@@ -492,6 +521,68 @@ export default function Office() {
                   <p style={{ color: '#555', textAlign: 'center', marginTop: '50px' }}>지시를 기다리고 있습니다...</p>
                 )}
               </div>
+
+              {/* [기술구현부 전용] 장르 템플릿 제안 리스트 */}
+              {activeDept.id === 'engineering' && (
+                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #4cd137' }}>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#4cd137', fontSize: '12px' }}>🛠️ 게임 기초 템플릿 제안 (빠른 시작)</h5>
+                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+                    {Object.entries(GENRE_TEMPLATES).map(([key, template]) => (
+                      <button 
+                        key={key}
+                        onClick={() => applyTemplate(key)}
+                        style={{ padding: '6px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #4cd137', borderRadius: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                        title={template.description}
+                      >
+                        {template.name} 적용
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* [콘텐츠 개발부 전용] 에셋 제안 리스트 */}
+              {activeDept.id === 'content' && extractedPrompts.length > 0 && (
+                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #e84118' }}>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#e84118', fontSize: '12px' }}>✨ 제안된 에셋 추출 결과</h5>
+                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+                    {extractedPrompts.map((prompt, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => handleGenerateImage(prompt)}
+                        disabled={imgLoading}
+                        style={{ padding: '4px 10px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #444', borderRadius: '15px', whiteSpace: 'nowrap', cursor: 'pointer', opacity: imgLoading ? 0.5 : 1 }}
+                      >
+                        🎨 {prompt.substring(0, 15)}...
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 이미지 생성 미리보기 (선택 창) */}
+              {previewImages.length > 0 && (
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#16161a', border: '2px solid #9c88ff', padding: '20px', borderRadius: '12px', zIndex: 150, textAlign: 'center', boxShadow: '0 0 50px rgba(0,0,0,1)' }}>
+                  <h4 style={{ margin: '0 0 15px 0', color: '#9c88ff' }}>🎨 생성된 에셋 시안</h4>
+                  <p style={{ fontSize: '12px', color: '#aaa', marginBottom: '20px' }}>마음에 드는 버전을 선택하여 프로젝트에 적용하세요.</p>
+                  <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '20px' }}>
+                    {previewImages.map((img, idx) => (
+                      <div key={idx} style={{ textAlign: 'center' }}>
+                        <div style={{ width: '150px', height: '150px', backgroundColor: '#000', border: '1px solid #333', borderRadius: '8px', marginBottom: '10px', overflow: 'hidden' }}>
+                          <img src={img.url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        </div>
+                        <button 
+                          onClick={() => applySelectedImage(img)}
+                          style={{ padding: '6px 15px', backgroundColor: '#9c88ff', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}
+                        >
+                          이걸로 적용
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => setPreviewImages([])} style={{ background: 'none', border: 'none', color: '#888', textDecoration: 'underline', cursor: 'pointer' }}>취소</button>
+                </div>
+              )}
 
               {/* 지시사항 입력창 (고정 크기) */}
               <div style={{ flexShrink: 0, marginBottom: '15px' }}>
