@@ -6,6 +6,7 @@ export const useProjectStore = create(
     (set) => ({
       projectName: '',
       isProjectStarted: false,
+      showSuggestions: true, // 초보자용 가이드 온오프 설정
       
       // 각 부서의 현재 업무 결과물 (Shared Context)
       projectData: {
@@ -20,9 +21,10 @@ export const useProjectStore = create(
       generatedAssets: [], // { id, url, description }
 
       // 프로젝트 초기화
-      startProject: (name) => set({ 
+      startProject: (name, showSuggestions = true) => set({ 
         projectName: name, 
-        isProjectStarted: true 
+        isProjectStarted: true,
+        showSuggestions
       }),
 
       // 부서별 업무 결과 업데이트 (한 부서가 수정하면 전체가 알게 됨)
@@ -42,6 +44,7 @@ export const useProjectStore = create(
       resetProject: () => set({
         projectName: '',
         isProjectStarted: false,
+        showSuggestions: true,
         projectData: {
           strategy: '',
           content: '',

@@ -4,6 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { requestAiTask, requestImageGeneration, GENRE_TEMPLATES } from '../services/ai';
 import { useProjectStore } from '../store/projectStore';
 
+// 전략기획실 초보자용 가이드 (제안)
+const STRATEGY_SUGGESTIONS = [
+  { name: '지뢰찾기', prompt: '지뢰찾기 장르의 게임을 만들고 싶어. 핵심 컨셉과 플레이 방식(메인 루프)을 기획해줘.' },
+  { name: '탑다운 RPG', prompt: '옛날 포켓몬스터 같은 탑다운 2D RPG 게임을 기획해줘. 전투보다는 탐험과 퍼즐 요소가 강했으면 좋겠어.' },
+  { name: '카드 배틀', prompt: '간단한 턴제 덱빌딩 카드 게임을 만들고 싶어. 유저 타겟층과 핵심적인 재미 요소를 기획해줘.' },
+  { name: '방치형 클리커', prompt: '화면을 터치해서 돈을 모으고 업그레이드하는 방치형 클리커 게임을 기획해줘. 중독성 있는 메인 루프를 짜줘.' },
+  { name: '스토리 어드벤처', prompt: '스토리 중심의 선택형 어드벤처 게임을 기획해줘. 플레이어의 선택에 따라 결말이 달라지는 구조야.' }
+];
+
 // 부서별 자산 매핑
 const DEPT_ASSETS = {
   strategy: { key: 'char_strategy', path: 'assets/char_strategy.png' },
@@ -197,7 +206,7 @@ class OfficeScene extends Phaser.Scene {
 
 export default function Office() {
   const navigate = useNavigate();
-  const { projectName, isProjectStarted, projectData, startProject, updateDeptData, resetProject, generatedAssets, addAsset } = useProjectStore();
+  const { projectName, isProjectStarted, projectData, startProject, updateDeptData, resetProject, generatedAssets, addAsset, showSuggestions } = useProjectStore();
   
   const [activeDept, setActiveDept] = useState(null); 
   const [instruction, setInstruction] = useState(""); 
@@ -205,6 +214,7 @@ export default function Office() {
   const [loading, setLoading] = useState(false);
   const [imgLoading, setImgLoading] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [localShowSuggestions, setLocalShowSuggestions] = useState(true);
   const [showGamePreview, setShowGamePreview] = useState(false);
   const [previewImages, setPreviewImages] = useState([]); // 생성된 이미지 미리보기
 
@@ -314,13 +324,17 @@ export default function Office() {
 
   const handleStartProject = () => {
     if (!newProjectName.trim()) return alert("프로젝트 이름을 입력하세요.");
-    startProject(newProjectName);
+    startProject(newProjectName, localShowSuggestions);
     setNewProjectName("");
   };
 
-  const applyTemplate = (templateKey) => {
+  const applyEngineeringTemplate = (templateKey) => {
     const template = GENRE_TEMPLATES[templateKey];
     setInstruction(`[${template.name} 템플릿 사용]\n이 템플릿을 기반으로 게임 로직을 작성해줘. 우리 게임의 컨셉과 비주얼 에셋에 맞게 기능을 수정하고 살을 붙여줘.\n\n참고 코드:\n\`\`\`javascript\n${template.code}\n\`\`\``);
+  };
+
+  const applyStrategyTemplate = (prompt) => {
+    setInstruction(prompt);
   };
 
   // 키보드 이벤트 버블링 방지 헬퍼
@@ -485,6 +499,21 @@ export default function Office() {
               placeholder="프로젝트 이름 입력..."
               style={{ width: '100%', padding: '15px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '4px', marginBottom: '25px', textAlign: 'center', fontSize: '18px', boxSizing: 'border-box' }}
             />
+            
+            {/* 초보자용 가이드 설정 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '25px', width: '100%' }}>
+              <input 
+                type="checkbox" 
+                id="showSuggestions"
+                checked={localShowSuggestions}
+                onChange={(e) => setLocalShowSuggestions(e.target.checked)}
+                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+              />
+              <label htmlFor="showSuggestions" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
+                부서별 초보자용 기획 가이드 및 템플릿 표시
+              </label>
+            </div>
+
             <button 
               onClick={handleStartProject}
               style={{ width: '100%', padding: '15px', backgroundColor: '#00a8ff', border: 'none', color: '#000', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', borderRadius: '4px' }}
@@ -522,15 +551,33 @@ export default function Office() {
                 )}
               </div>
 
+              {/* [전략기획부 전용] 초보자용 기획 제안 리스트 */}
+              {activeDept.id === 'strategy' && showSuggestions && !aiReply && (
+                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #00a8ff' }}>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#00a8ff', fontSize: '12px' }}>💡 게임 기획이 처음이신가요? (예시 선택)</h5>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {STRATEGY_SUGGESTIONS.map((suggestion, idx) => (
+                      <button 
+                        key={idx}
+                        onClick={() => applyStrategyTemplate(suggestion.prompt)}
+                        style={{ padding: '6px 10px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #00a8ff', borderRadius: '4px', cursor: 'pointer' }}
+                      >
+                        {suggestion.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* [기술구현부 전용] 장르 템플릿 제안 리스트 */}
-              {activeDept.id === 'engineering' && (
+              {activeDept.id === 'engineering' && showSuggestions && (
                 <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #4cd137' }}>
                   <h5 style={{ margin: '0 0 8px 0', color: '#4cd137', fontSize: '12px' }}>🛠️ 게임 기초 템플릿 제안 (빠른 시작)</h5>
                   <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
                     {Object.entries(GENRE_TEMPLATES).map(([key, template]) => (
                       <button 
                         key={key}
-                        onClick={() => applyTemplate(key)}
+                        onClick={() => applyEngineeringTemplate(key)}
                         style={{ padding: '6px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #4cd137', borderRadius: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}
                         title={template.description}
                       >
