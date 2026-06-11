@@ -1,11 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '../store/projectStore';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 function Home() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const { isProjectStarted, projectName, startProject, updateDeptData, resetProject } = useProjectStore();
+  const { isProjectStarted, projectName, startProject, updateDeptData, resetProject, setConfig, ceoName, showSuggestions } = useProjectStore();
+
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [localCeoName, setLocalCeoName] = useState(ceoName);
+  const [localShowSuggestions, setLocalShowSuggestions] = useState(showSuggestions);
+
+  useEffect(() => {
+    if (showConfigModal) {
+      setLocalCeoName(ceoName);
+      setLocalShowSuggestions(showSuggestions);
+    }
+  }, [showConfigModal, ceoName, showSuggestions]);
 
   const handleNewProject = () => {
     if (isProjectStarted) {
@@ -51,6 +62,11 @@ function Home() {
     reader.readAsText(file);
   };
 
+  const saveConfig = () => {
+    setConfig(localCeoName, localShowSuggestions);
+    setShowConfigModal(false);
+  };
+
   return (
     <div className="title-screen">
       <div className="game-bg"></div>
@@ -81,13 +97,60 @@ function Home() {
         <div className="menu-item" onClick={handleLoadProject}>
           {isProjectStarted ? `CONTINUE: ${projectName}` : 'IMPORT PROJECT'}
         </div>
-        <div className="menu-item" onClick={() => alert('Settings')}>
+        <div className="menu-item" onClick={() => setShowConfigModal(true)}>
           CONFIG
         </div>
         <div className="menu-item" onClick={() => window.close()}>
           EXIT
         </div>
       </div>
+
+      {showConfigModal && (
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200 }}>
+          <div style={{ backgroundColor: '#16161a', border: '2px solid #00a8ff', borderRadius: '12px', width: '450px', padding: '40px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+            <h2 style={{ color: '#00a8ff', marginTop: 0, textAlign: 'center', marginBottom: '30px' }}>⚙️ 시스템 설정 (CONFIG)</h2>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', color: '#aaa', marginBottom: '8px', fontSize: '14px' }}>사용자 호칭</label>
+              <input 
+                type="text" 
+                value={localCeoName}
+                onChange={(e) => setLocalCeoName(e.target.value)}
+                placeholder="예: 김대표, 디렉터님"
+                style={{ width: '100%', padding: '12px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '4px', fontSize: '16px', boxSizing: 'border-box' }}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '30px' }}>
+              <input 
+                type="checkbox" 
+                id="homeShowSuggestions"
+                checked={localShowSuggestions}
+                onChange={(e) => setLocalShowSuggestions(e.target.checked)}
+                style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+              />
+              <label htmlFor="homeShowSuggestions" style={{ color: '#aaa', fontSize: '14px', cursor: 'pointer' }}>
+                부서별 초보자용 예시(가이드) 표시 켜기
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button 
+                onClick={() => setShowConfigModal(false)}
+                style={{ flex: 1, padding: '12px', backgroundColor: '#333', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '16px', borderRadius: '4px' }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={saveConfig}
+                style={{ flex: 1, padding: '12px', backgroundColor: '#00a8ff', border: 'none', color: '#000', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', borderRadius: '4px' }}
+              >
+                설정 저장
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <footer style={{ position: 'absolute', bottom: '2rem', color: 'var(--text-muted)', fontSize: '1.2rem', zIndex: 1 }}>
         © 2026 AI Game Maker Company. All Rights Reserved.

@@ -21,12 +21,18 @@ export const useProjectStore = create(
       // 생성된 이미지 에셋 저장소
       generatedAssets: [], // { id, url, description }
 
-      // 프로젝트 초기화
-      startProject: (name, ceoName, showSuggestions = true) => set({ 
-        projectName: name, 
-        ceoName: ceoName.trim() || '회장님', // 빈 값이면 기본값 유지
-        isProjectStarted: true,
+      // 전역 환경 설정 업데이트
+      setConfig: (ceoName, showSuggestions) => set({
+        ceoName: ceoName.trim() || '회장님',
         showSuggestions
+      }),
+
+      // 프로젝트 초기화
+      startProject: (name, ceoName, showSuggestions) => set({ 
+        projectName: name, 
+        ceoName: ceoName ? ceoName.trim() || '회장님' : '회장님',
+        isProjectStarted: true,
+        showSuggestions: showSuggestions !== undefined ? showSuggestions : true
       }),
 
       // 부서별 업무 결과 업데이트 (한 부서가 수정하면 전체가 알게 됨)
@@ -43,11 +49,10 @@ export const useProjectStore = create(
       })),
 
       // 프로젝트 데이터 초기화
-      resetProject: () => set({
+      resetProject: () => set(state => ({
         projectName: '',
-        ceoName: '회장님',
         isProjectStarted: false,
-        showSuggestions: true,
+        // 호칭과 제안 설정은 초기화하지 않고 유지함
         projectData: {
           strategy: '',
           content: '',
@@ -56,7 +61,7 @@ export const useProjectStore = create(
           analytics: ''
         },
         generatedAssets: []
-      }),
+      })),
     }),
     {
       name: 'agmc-project-storage',
