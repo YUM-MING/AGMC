@@ -430,7 +430,7 @@ export default function Office() {
     }}>
       <div style={{ width: '800px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, color: '#00a8ff', letterSpacing: '2px' }}>AGMC HQ</h2>
+          <h2 style={{ margin: 0, color: '#00a8ff', letterSpacing: '2px' }}>AGMC HQ - {ceoName}의 집무실</h2>
           {isProjectStarted && (
             <div style={{ padding: '4px 12px', border: '1px solid #4cd137', borderRadius: '4px', color: '#4cd137', fontSize: '13px', fontWeight: 'bold' }}>
               PROJ: {projectName}

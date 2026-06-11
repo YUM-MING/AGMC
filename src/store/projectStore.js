@@ -5,6 +5,7 @@ export const useProjectStore = create(
   persist(
     (set) => ({
       projectName: '',
+      ceoName: '회장님', // 사용자 호칭 기본값
       isProjectStarted: false,
       showSuggestions: true, // 초보자용 가이드 온오프 설정
       
@@ -21,8 +22,9 @@ export const useProjectStore = create(
       generatedAssets: [], // { id, url, description }
 
       // 프로젝트 초기화
-      startProject: (name, showSuggestions = true) => set({ 
+      startProject: (name, ceoName, showSuggestions = true) => set({ 
         projectName: name, 
+        ceoName: ceoName.trim() || '회장님', // 빈 값이면 기본값 유지
         isProjectStarted: true,
         showSuggestions
       }),
@@ -43,6 +45,7 @@ export const useProjectStore = create(
       // 프로젝트 데이터 초기화
       resetProject: () => set({
         projectName: '',
+        ceoName: '회장님',
         isProjectStarted: false,
         showSuggestions: true,
         projectData: {
