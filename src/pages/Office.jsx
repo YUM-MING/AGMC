@@ -137,7 +137,7 @@ class OfficeScene extends Phaser.Scene {
   }
 
   getGuideMessage() {
-    if (!this.projectData?.strategy) return "반갑습니다 회장님! 먼저 [전략기획실]에 방문하여 게임의 핵심 컨셉을 정해주세요.";
+    if (!this.projectData?.strategy) return `반갑습니다 ${this.ceoName}! 먼저 [전략기획실]에 방문하여 게임의 핵심 컨셉을 정해주세요.`;
     if (!this.projectData?.content) return "컨셉이 나왔군요! 이제 [콘텐츠개발부]에서 세계관과 비주얼 스타일을 구체화하세요.";
     if (!this.projectData?.engineering) return "기획이 탄탄합니다. [기술구현부]에 가서 실제 플레이 가능한 코드를 요청하세요!";
     return "프로토타입이 준비되었습니다! [라이브운영부]나 [데이터인사이트부]에서 완성도를 높여보세요.";
