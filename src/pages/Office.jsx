@@ -640,6 +640,19 @@ export default function Office() {
                 </div>
               )}
 
+              {/* 이미지 생성 중 로딩 오버레이 */}
+              {imgLoading && (
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 160, borderRadius: '12px' }}>
+                  <style>{`
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    @keyframes pulseText { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+                  `}</style>
+                  <div style={{ width: '50px', height: '50px', border: '5px solid #333', borderTop: '5px solid #e84118', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '20px' }}></div>
+                  <h3 style={{ margin: '0 0 10px 0', color: '#e84118', fontSize: '22px', animation: 'pulseText 1.5s infinite' }}>🎨 AI가 에셋을 열심히 그리는 중입니다...</h3>
+                  <p style={{ fontSize: '14px', color: '#aaa', margin: 0 }}>복잡도에 따라 약 10~20초 정도 소요될 수 있습니다.<br/>잠시만 기다려주세요!</p>
+                </div>
+              )}
+
               {/* 이미지 생성 미리보기 (선택 창) */}
               {previewImages.length > 0 && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#16161a', border: '2px solid #9c88ff', padding: '20px', borderRadius: '12px', zIndex: 150, textAlign: 'center', boxShadow: '0 0 50px rgba(0,0,0,1)' }}>
