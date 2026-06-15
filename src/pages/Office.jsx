@@ -558,13 +558,13 @@ export default function Office() {
             </div>
 
             {/* 우측 업무 영역 */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
               <h3 style={{ marginTop: 0, color: activeDept.colorStr, flexShrink: 0 }}>📋 {activeDept.name} 보고서</h3>
               
               {/* 보고서 출력창 (유동적 크기 할당) */}
-              <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflowY: 'auto', minHeight: 0 }}>
+              <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflow: 'auto', minHeight: 0 }}>
                 {aiReply ? (
-                  <div style={{ whiteSpace: 'pre-wrap', fontSize: '13px', color: '#e1e1e6', lineHeight: '1.6', fontFamily: 'monospace' }}>
+                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '13px', color: '#e1e1e6', lineHeight: '1.6', fontFamily: 'monospace' }}>
                     {aiReply}
                   </div>
                 ) : (
