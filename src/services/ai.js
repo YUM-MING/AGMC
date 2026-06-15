@@ -386,9 +386,9 @@ const removeWhiteBackground = (base64Image) => {
 };
 
 /**
- * DALL-E 3를 사용하여 게임 에셋 이미지를 생성하는 함수
+ * GPT-Image를 사용하여 게임 에셋 이미지를 생성하는 함수
  * @param {string} prompt - 이미지 생성을 위한 설명
- * @param {number} numImages - 생성할 이미지 개수 (DALL-E 3는 1개만 지원하므로 루프 처리)
+ * @param {number} numImages - 생성할 이미지 개수
  */
 export const requestImageGeneration = async (prompt, numImages = 1) => {
   const basePrompt = `사용자가 요청한 정보를 클래식 온라인 게임 캐릭터 및 사물로 재해석하세요. 도트 그래픽 기반의 치비(Chibi) 아바타 스타일이며, 옛날 한국 MMORPG 캐릭터 선택창에 나올 법한 느낌입니다.
@@ -402,13 +402,13 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
   const results = [];
   let isAiFailed = false;
   
-  // 1. OpenAI DALL-E 3 / 2 시도
+  // 1. OpenAI GPT-Image 시도
   if (imageOpenai) {
     try {
-      console.log("DALL-E 3 이미지 생성 시도 중...");
+      console.log("GPT-Image-1 모델로 이미지 생성 시도 중...");
       for (let i = 0; i < numImages; i++) {
         const response = await imageOpenai.images.generate({
-          model: "dall-e-3",
+          model: "gpt-image-1",
           prompt: basePrompt.substring(0, 4000),
           size: "1024x1024",
           quality: "hd", 
@@ -425,14 +425,14 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
       }
       if (results.length > 0) return results;
     } catch (error) {
-      console.warn("DALL-E 3 생성 실패:", error.message);
+      console.warn("GPT-Image-1 생성 실패:", error.message);
       
-      // 2. OpenAI DALL-E 2 폴백 시도
+      // 2. 다른 모델로 폴백 시도 (예: 이전 모델 또는 대체 모델)
       if (error.status === 400 || error.status === 404 || error.status === 429 || error.message.includes('model') || error.message.includes('billing')) {
-        console.warn("OpenAI 모델 접근 권한이 없거나 모델을 찾을 수 없습니다. DALL-E 2로 폴백합니다.");
+        console.warn("GPT-Image-1 접근 권한이 없거나 모델을 찾을 수 없습니다. GPT-Image-2로 폴백합니다.");
         try {
           const response = await imageOpenai.images.generate({
-            model: "dall-e-2",
+            model: "gpt-image-2", // 리스트에 있는 대체 모델
             prompt: basePrompt.substring(0, 1000),
             size: "1024x1024",
             n: numImages 
@@ -447,7 +447,7 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
           }
           if (results.length > 0) return results;
         } catch (fallbackError) {
-          console.error("DALL-E 2 폴백 실패:", fallbackError.message);
+          console.error("GPT-Image-2 폴백 실패:", fallbackError.message);
           isAiFailed = true;
         }
       } else {
@@ -458,7 +458,7 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
     isAiFailed = true;
   }
 
-  // 3. DiceBear API 최종 폴백 (OpenAI가 실패하거나 API 키가 없을 경우)
+  // 3. DiceBear API 최종 폴백
   if (isAiFailed || results.length === 0) {
     console.log("OpenAI API 결제 정보가 없거나 키가 제한되어 외부 무료 아바타 생성기(DiceBear)로 대체합니다...");
     try {
