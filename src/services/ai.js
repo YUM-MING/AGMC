@@ -337,7 +337,7 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Changed from gpt-4o to gpt-4o-mini to resolve 403 access issues
+      model: "gpt-4o", // Changed back to gpt-4o for maximum quality
       messages: [
         { role: "system", content: finalSystemPrompt },
         { role: "user", content: instruction }
@@ -350,7 +350,7 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
   } catch (error) {
     console.error("GPT 통신 오류:", error);
     if (error.status === 403) {
-      throw new Error("OpenAI API 키에 'gpt-4o-mini' 모델 접근 권한이 없습니다. API 설정을 확인해주세요.");
+      throw new Error("OpenAI API 키에 'gpt-4o' 모델 접근 권한이 없습니다. API 설정을 확인해주세요.");
     }
     if (error.status === 429) {
       throw new Error("OpenAI API 한도(Quota)를 초과했거나 잔액이 부족합니다. 결제 상태를 확인해주세요.");
