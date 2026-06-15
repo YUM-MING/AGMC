@@ -400,8 +400,9 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
 [금지 사항]: 실사, 애니메이션 일러스트, 3D 렌더링, 복잡한 배경, 텍스트.`;
 
   const results = [];
+  let isAiFailed = false;
   
-  // 1. OpenAI DALL-E 3 시도
+  // 1. OpenAI DALL-E 3 / 2 시도
   if (imageOpenai) {
     try {
       console.log("DALL-E 3 이미지 생성 시도 중...");
@@ -427,7 +428,7 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
       console.warn("DALL-E 3 생성 실패:", error.message);
       
       // 2. OpenAI DALL-E 2 폴백 시도
-      if (error.status === 400 || error.status === 404 || error.message.includes('model')) {
+      if (error.status === 400 || error.status === 404 || error.status === 429 || error.message.includes('model') || error.message.includes('billing')) {
         console.warn("OpenAI 모델 접근 권한이 없거나 모델을 찾을 수 없습니다. DALL-E 2로 폴백합니다.");
         try {
           const response = await imageOpenai.images.generate({
@@ -447,30 +448,36 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
           if (results.length > 0) return results;
         } catch (fallbackError) {
           console.error("DALL-E 2 폴백 실패:", fallbackError.message);
+          isAiFailed = true;
         }
+      } else {
+        isAiFailed = true;
       }
     }
+  } else {
+    isAiFailed = true;
   }
 
-  // 3. Pollinations AI 최종 폴백 (OpenAI가 실패하거나 API 키가 없을 경우)
-  console.log("외부 무료 AI 서비스(Pollinations)를 통해 이미지를 생성합니다...");
-  try {
-    for (let i = 0; i < numImages; i++) {
-      // Pollinations AI는 prompt를 URL 인코딩하여 전달
-      // 도트 스타일을 강조하기 위해 프롬프트에 키워드 추가
-      const pollinationsPrompt = encodeURIComponent(basePrompt + " (pixel art, 8-bit, game asset style, pure white background)");
-      const imageUrl = `https://image.pollinations.ai/prompt/${pollinationsPrompt}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
-      
-      const b64 = await fetchAndConvertToBase64(imageUrl);
-      if (b64) {
-        const transparent = await removeWhiteBackground(b64);
-        results.push(transparent);
+  // 3. DiceBear API 최종 폴백 (OpenAI가 실패하거나 API 키가 없을 경우)
+  if (isAiFailed || results.length === 0) {
+    console.log("OpenAI API 결제 정보가 없거나 키가 제한되어 외부 무료 아바타 생성기(DiceBear)로 대체합니다...");
+    try {
+      for (let i = 0; i < numImages; i++) {
+        // DiceBear의 pixel-art 스타일을 이용해 랜덤한 캐릭터/아이템 느낌의 도트를 생성
+        const seed = Math.floor(Math.random() * 100000) + encodeURIComponent(prompt.substring(0, 10));
+        const imageUrl = `https://api.dicebear.com/9.x/pixel-art/svg?seed=${seed}&size=512`;
+        
+        const b64 = await fetchAndConvertToBase64(imageUrl);
+        if (b64) {
+          // DiceBear는 기본 배경이 투명이므로 누끼따기를 할 필요 없이 바로 사용 가능
+          results.push(`data:image/svg+xml;base64,${b64}`);
+        }
       }
+      return results;
+    } catch (finalError) {
+      console.error("최종 폴백 서비스 실패:", finalError.message);
+      throw new Error("모든 이미지 생성 서비스가 실패했습니다. 결제 정보가 등록된 유효한 OpenAI API 키를 입력해주세요.");
     }
-    return results;
-  } catch (pollinationsError) {
-    console.error("최종 폴백 서비스 실패:", pollinationsError.message);
-    throw new Error("모든 이미지 생성 서비스가 실패했습니다. 네트워크 상태나 API 설정을 확인해주세요.");
   }
 };
 
