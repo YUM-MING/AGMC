@@ -227,7 +227,17 @@ export default function Office() {
     aiReply.split('\n')
       .map(l => l.trim())
       .filter(l => (l.startsWith('-') || l.startsWith('*') || /^\d+\./.test(l)) && l.length > 10)
-      .map(l => l.replace(/^[-*\d.]+\s*/, ''))
+      .map(l => {
+        const clean = l.replace(/^[-*\d.]+\s*/, '');
+        const match = clean.match(/^\[(.*?)\]\s*(.*)/);
+        if (match) {
+          const category = match[1];
+          const content = match[2];
+          const label = content.split(':')[0].trim();
+          return { category, label, prompt: content };
+        }
+        return { category: '에셋', label: clean.substring(0, 15), prompt: clean };
+      })
     : [];
 
   useEffect(() => {
@@ -614,16 +624,16 @@ export default function Office() {
               {/* [콘텐츠 개발부 전용] 에셋 제안 리스트 */}
               {activeDept.id === 'content' && extractedPrompts.length > 0 && (
                 <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #e84118' }}>
-                  <h5 style={{ margin: '0 0 8px 0', color: '#e84118', fontSize: '12px' }}>✨ 제안된 에셋 추출 결과</h5>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#e84118', fontSize: '12px' }}>✨ 제안된 에셋 추출 결과 (순서대로 생성 권장)</h5>
                   <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
-                    {extractedPrompts.map((prompt, idx) => (
+                    {extractedPrompts.map((item, idx) => (
                       <button 
                         key={idx}
-                        onClick={() => handleGenerateImage(prompt)}
+                        onClick={() => handleGenerateImage(item.prompt)}
                         disabled={imgLoading}
-                        style={{ padding: '4px 10px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #444', borderRadius: '15px', whiteSpace: 'nowrap', cursor: 'pointer', opacity: imgLoading ? 0.5 : 1 }}
+                        style={{ padding: '4px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #444', borderRadius: '15px', whiteSpace: 'nowrap', cursor: 'pointer', opacity: imgLoading ? 0.5 : 1 }}
                       >
-                        🎨 {prompt.substring(0, 15)}...
+                        {item.category === '캐릭터' ? '👤' : item.category === '배경' ? '🖼️' : '📦'} [{item.category}] {item.label}...
                       </button>
                     ))}
                   </div>
