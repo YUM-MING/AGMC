@@ -381,8 +381,10 @@ const removeWhiteBackground = (base64Image) => {
 
 /**
  * DALL-E 3를 사용하여 게임 에셋 이미지를 생성하는 함수
+ * @param {string} prompt - 이미지 생성을 위한 설명
+ * @param {number} numImages - 생성할 이미지 개수 (DALL-E 3는 1개만 지원하므로 루프 처리)
  */
-export const requestImageGeneration = async (prompt) => {
+export const requestImageGeneration = async (prompt, numImages = 1) => {
   if (!openai) {
     throw new Error("OpenAI API 키가 설정되지 않았습니다.");
   }
@@ -395,25 +397,55 @@ export const requestImageGeneration = async (prompt) => {
 
 [금지 사항]: 실사, 애니메이션 일러스트, 3D 렌더링, 복잡한 배경, 텍스트.`;
 
+  const results = [];
+  
+  // DALL-E 3로 먼저 시도
   try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: basePrompt.substring(0, 4000),
-      size: "1024x1024",
-      quality: "hd", 
-      n: 1 // DALL-E 3는 현재 n: 1만 지원합니다.
-    });
+    // numImages만큼 반복 (DALL-E 3는 호출당 n=1만 지원)
+    for (let i = 0; i < numImages; i++) {
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: basePrompt.substring(0, 4000),
+        size: "1024x1024",
+        quality: "hd", 
+        n: 1 
+      });
 
-    const results = [];
-    for (const item of response.data) {
-      const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
-      if (b64) {
-        const transparent = await removeWhiteBackground(b64);
-        results.push(transparent);
+      for (const item of response.data) {
+        const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
+        if (b64) {
+          const transparent = await removeWhiteBackground(b64);
+          results.push(transparent);
+        }
       }
     }
     return results;
   } catch (error) {
+    // 만약 dall-e-3 모델이 없다는 에러(400)가 발생하면 dall-e-2로 폴백 시도
+    if (error.status === 400 && error.message.includes('dall-e-3')) {
+      console.warn("DALL-E 3 모델을 사용할 수 없어 DALL-E 2로 폴백합니다.");
+      try {
+        const response = await openai.images.generate({
+          model: "dall-e-2",
+          prompt: basePrompt.substring(0, 1000), // DALL-E 2는 프롬프트 제한이 더 짧음
+          size: "1024x1024",
+          n: numImages // DALL-E 2는 n > 1 지원
+        });
+
+        for (const item of response.data) {
+          const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
+          if (b64) {
+            const transparent = await removeWhiteBackground(b64);
+            results.push(transparent);
+          }
+        }
+        return results;
+      } catch (fallbackError) {
+        console.error("DALL-E 2 폴백 생성 실패:", fallbackError);
+        throw fallbackError;
+      }
+    }
+    
     console.error("이미지 생성 오류:", error);
     throw error;
   }
