@@ -38,7 +38,7 @@ jobs:
             # .env 파일 생성/업데이트 (시크릿에서 최신 값으로 덮어쓰기)
             echo "VITE_OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
             echo "VITE_IMAGE_OPENAI_API_KEY=${{ secrets.IMAGE_OPENAI_API_KEY }}" >> .env
-            echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
+            echo "VITE_HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
             
             # 도커 빌드 및 실행
             docker compose up -d --build
