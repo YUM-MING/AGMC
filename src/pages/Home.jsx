@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '../store/projectStore';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 
 function Home() {
   const navigate = useNavigate();
@@ -10,13 +10,6 @@ function Home() {
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [localCeoName, setLocalCeoName] = useState(ceoName);
   const [localShowSuggestions, setLocalShowSuggestions] = useState(showSuggestions);
-
-  useEffect(() => {
-    if (showConfigModal) {
-      setLocalCeoName(ceoName);
-      setLocalShowSuggestions(showSuggestions);
-    }
-  }, [showConfigModal, ceoName, showSuggestions]);
 
   const handleNewProject = () => {
     if (isProjectStarted) {
@@ -55,11 +48,17 @@ function Home() {
         } else {
           alert('올바르지 않은 프로젝트 파일입니다.');
         }
-      } catch (err) {
+      } catch {
         alert('파일을 읽는 중 오류가 발생했습니다.');
       }
     };
     reader.readAsText(file);
+  };
+
+  const openConfigModal = () => {
+    setLocalCeoName(ceoName);
+    setLocalShowSuggestions(showSuggestions);
+    setShowConfigModal(true);
   };
 
   const saveConfig = () => {
@@ -97,7 +96,7 @@ function Home() {
         <div className="menu-item" onClick={handleLoadProject}>
           {isProjectStarted ? `CONTINUE: ${projectName}` : 'IMPORT PROJECT'}
         </div>
-        <div className="menu-item" onClick={() => setShowConfigModal(true)}>
+        <div className="menu-item" onClick={openConfigModal}>
           CONFIG
         </div>
         <div className="menu-item" onClick={() => window.close()}>

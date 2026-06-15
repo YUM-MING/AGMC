@@ -49,7 +49,7 @@ export const useProjectStore = create(
       })),
 
       // 프로젝트 데이터 초기화
-      resetProject: () => set(state => ({
+      resetProject: () => set(() => ({
         projectName: '',
         isProjectStarted: false,
         // 호칭과 제안 설정은 초기화하지 않고 유지함
