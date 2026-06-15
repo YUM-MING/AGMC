@@ -39,6 +39,7 @@ jobs:
             # 실제로는 서버에 직접 vi .env로 만드는 것이 더 안전할 수 있음
             if [ ! -f .env ]; then
               echo "VITE_OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+              echo "VITE_IMAGE_OPENAI_API_KEY=${{ secrets.IMAGE_OPENAI_API_KEY }}" >> .env
               echo "HF_TOKEN=${{ secrets.HF_TOKEN }}" >> .env
             fi
             

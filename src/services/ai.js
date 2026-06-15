@@ -1,12 +1,18 @@
 import OpenAI from 'openai';
 
 // Vite 환경 변수에서 OpenAI API 키를 가져옵니다. 
-// (.env 파일에 VITE_OPENAI_API_KEY=sk-... 형태로 넣어두시면 됩니다)
 const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+// 이미지 전용 키가 설정되어 있으면 그것을 쓰고, 없으면 기본 키를 사용합니다.
+const imageApiKey = import.meta.env.VITE_IMAGE_OPENAI_API_KEY || apiKey;
 
 const openai = apiKey ? new OpenAI({
   apiKey: apiKey,
   dangerouslyAllowBrowser: true // 백엔드 없이 프론트에서 직접 호출할 때 필수 옵션
+}) : null;
+
+const imageOpenai = imageApiKey ? new OpenAI({
+  apiKey: imageApiKey,
+  dangerouslyAllowBrowser: true
 }) : null;
 
 // 공통 게임 템플릿 (기술구현 AI에게 참고용으로 전달하거나 UI에서 제안)
@@ -396,11 +402,11 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
   const results = [];
   
   // 1. OpenAI DALL-E 3 시도
-  if (openai) {
+  if (imageOpenai) {
     try {
       console.log("DALL-E 3 이미지 생성 시도 중...");
       for (let i = 0; i < numImages; i++) {
-        const response = await openai.images.generate({
+        const response = await imageOpenai.images.generate({
           model: "dall-e-3",
           prompt: basePrompt.substring(0, 4000),
           size: "1024x1024",
@@ -424,7 +430,7 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
       if (error.status === 400 || error.status === 404 || error.message.includes('model')) {
         console.warn("OpenAI 모델 접근 권한이 없거나 모델을 찾을 수 없습니다. DALL-E 2로 폴백합니다.");
         try {
-          const response = await openai.images.generate({
+          const response = await imageOpenai.images.generate({
             model: "dall-e-2",
             prompt: basePrompt.substring(0, 1000),
             size: "1024x1024",
