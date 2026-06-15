@@ -23,17 +23,17 @@ export const useProjectStore = create(
 
       // 전역 환경 설정 업데이트
       setConfig: (ceoName, showSuggestions) => set({
-        ceoName: ceoName.trim() || '회장님',
+        ceoName: (typeof ceoName === 'string' ? ceoName.trim() : ceoName) || '회장님',
         showSuggestions
       }),
 
       // 프로젝트 초기화
-      startProject: (name, ceoName, showSuggestions) => set({ 
-        projectName: name, 
-        ceoName: ceoName ? ceoName.trim() || '회장님' : '회장님',
+      startProject: (name, ceoName, showSuggestions) => set((state) => ({ 
+        projectName: typeof name === 'string' ? name.trim() : name, 
+        ceoName: typeof ceoName === 'string' ? (ceoName.trim() || state.ceoName) : state.ceoName,
         isProjectStarted: true,
-        showSuggestions: showSuggestions !== undefined ? showSuggestions : true
-      }),
+        showSuggestions: typeof showSuggestions !== 'undefined' ? showSuggestions : state.showSuggestions
+      })),
 
       // 부서별 업무 결과 업데이트 (한 부서가 수정하면 전체가 알게 됨)
       updateDeptData: (deptId, content) => set((state) => ({

@@ -223,7 +223,7 @@ export default function Office() {
   const [previewImages, setPreviewImages] = useState([]); // 생성된 이미지 미리보기
 
   // 보고서에서 에셋 관련 묘사만 추출하는 헬퍼
-  const extractedPrompts = activeDept?.id === 'content' && aiReply ? 
+  const extractedPrompts = activeDept?.id === 'content' && typeof aiReply === 'string' && aiReply ? 
     aiReply.split('\n')
       .map(l => l.trim())
       .filter(l => (l.startsWith('-') || l.startsWith('*') || /^\d+\./.test(l)) && l.length > 10)
@@ -331,7 +331,7 @@ export default function Office() {
 
   const handleStartProject = () => {
     if (!newProjectName.trim()) return alert("프로젝트 이름을 입력하세요.");
-    startProject(newProjectName, localShowSuggestions);
+    startProject(newProjectName, ceoName, localShowSuggestions);
     setNewProjectName("");
   };
 
@@ -353,8 +353,8 @@ export default function Office() {
     if (!code) return "";
     
     // AI가 작성한 순수 Javascript (MainScene 클래스)만 추출
-    const match = code.match(/```javascript\n?([\s\S]*?)```/) || code.match(/```js\n?([\s\S]*?)```/) || code.match(/```([\s\S]*?)```/);
-    let jsCode = match ? match[1].trim() : code;
+    const match = typeof code === 'string' ? (code.match(/```javascript\n?([\s\S]*?)```/) || code.match(/```js\n?([\s\S]*?)```/) || code.match(/```([\s\S]*?)```/)) : null;
+    let jsCode = match ? match[1].trim() : (typeof code === 'string' ? code : "");
 
     // AI가 실수로 모듈 export 문법을 썼을 경우 제거 (브라우저 script 태그 삽입 오류 방지)
     jsCode = jsCode.replace(/export\s+default\s+class/g, 'class');
