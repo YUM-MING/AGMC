@@ -385,10 +385,6 @@ const removeWhiteBackground = (base64Image) => {
  * @param {number} numImages - 생성할 이미지 개수 (DALL-E 3는 1개만 지원하므로 루프 처리)
  */
 export const requestImageGeneration = async (prompt, numImages = 1) => {
-  if (!openai) {
-    throw new Error("OpenAI API 키가 설정되지 않았습니다.");
-  }
-
   const basePrompt = `사용자가 요청한 정보를 클래식 온라인 게임 캐릭터 및 사물로 재해석하세요. 도트 그래픽 기반의 치비(Chibi) 아바타 스타일이며, 옛날 한국 MMORPG 캐릭터 선택창에 나올 법한 느낌입니다.
 요청된 대상의 특징을 유지하되, 이를 단순화된 도트 디자인으로 표현하세요.
 배경은 완벽한 흰색(Pure white background)이어야 쉽게 누끼를 딸 수 있습니다. 전신(Full body), 정면(Front view) 구도.
@@ -399,37 +395,17 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
 
   const results = [];
   
-  // DALL-E 3로 먼저 시도
-  try {
-    // numImages만큼 반복 (DALL-E 3는 호출당 n=1만 지원)
-    for (let i = 0; i < numImages; i++) {
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: basePrompt.substring(0, 4000),
-        size: "1024x1024",
-        quality: "hd", 
-        n: 1 
-      });
-
-      for (const item of response.data) {
-        const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
-        if (b64) {
-          const transparent = await removeWhiteBackground(b64);
-          results.push(transparent);
-        }
-      }
-    }
-    return results;
-  } catch (error) {
-    // 만약 dall-e-3 모델이 없다는 에러(400)가 발생하면 dall-e-2로 폴백 시도
-    if (error.status === 400 && error.message.includes('dall-e-3')) {
-      console.warn("DALL-E 3 모델을 사용할 수 없어 DALL-E 2로 폴백합니다.");
-      try {
+  // 1. OpenAI DALL-E 3 시도
+  if (openai) {
+    try {
+      console.log("DALL-E 3 이미지 생성 시도 중...");
+      for (let i = 0; i < numImages; i++) {
         const response = await openai.images.generate({
-          model: "dall-e-2",
-          prompt: basePrompt.substring(0, 1000), // DALL-E 2는 프롬프트 제한이 더 짧음
+          model: "dall-e-3",
+          prompt: basePrompt.substring(0, 4000),
           size: "1024x1024",
-          n: numImages // DALL-E 2는 n > 1 지원
+          quality: "hd", 
+          n: 1 
         });
 
         for (const item of response.data) {
@@ -439,15 +415,56 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
             results.push(transparent);
           }
         }
-        return results;
-      } catch (fallbackError) {
-        console.error("DALL-E 2 폴백 생성 실패:", fallbackError);
-        throw fallbackError;
+      }
+      if (results.length > 0) return results;
+    } catch (error) {
+      console.warn("DALL-E 3 생성 실패:", error.message);
+      
+      // 2. OpenAI DALL-E 2 폴백 시도
+      if (error.status === 400 || error.status === 404 || error.message.includes('model')) {
+        console.warn("OpenAI 모델 접근 권한이 없거나 모델을 찾을 수 없습니다. DALL-E 2로 폴백합니다.");
+        try {
+          const response = await openai.images.generate({
+            model: "dall-e-2",
+            prompt: basePrompt.substring(0, 1000),
+            size: "1024x1024",
+            n: numImages 
+          });
+
+          for (const item of response.data) {
+            const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
+            if (b64) {
+              const transparent = await removeWhiteBackground(b64);
+              results.push(transparent);
+            }
+          }
+          if (results.length > 0) return results;
+        } catch (fallbackError) {
+          console.error("DALL-E 2 폴백 실패:", fallbackError.message);
+        }
       }
     }
-    
-    console.error("이미지 생성 오류:", error);
-    throw error;
+  }
+
+  // 3. Pollinations AI 최종 폴백 (OpenAI가 실패하거나 API 키가 없을 경우)
+  console.log("외부 무료 AI 서비스(Pollinations)를 통해 이미지를 생성합니다...");
+  try {
+    for (let i = 0; i < numImages; i++) {
+      // Pollinations AI는 prompt를 URL 인코딩하여 전달
+      // 도트 스타일을 강조하기 위해 프롬프트에 키워드 추가
+      const pollinationsPrompt = encodeURIComponent(basePrompt + " (pixel art, 8-bit, game asset style, pure white background)");
+      const imageUrl = `https://image.pollinations.ai/prompt/${pollinationsPrompt}?width=1024&height=1024&nologo=true&seed=${Math.floor(Math.random() * 100000)}`;
+      
+      const b64 = await fetchAndConvertToBase64(imageUrl);
+      if (b64) {
+        const transparent = await removeWhiteBackground(b64);
+        results.push(transparent);
+      }
+    }
+    return results;
+  } catch (pollinationsError) {
+    console.error("최종 폴백 서비스 실패:", pollinationsError.message);
+    throw new Error("모든 이미지 생성 서비스가 실패했습니다. 네트워크 상태나 API 설정을 확인해주세요.");
   }
 };
 
