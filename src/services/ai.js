@@ -394,8 +394,8 @@ export const requestImageGeneration = async (prompt, count = 1) => {
       model: "dall-e-3",
       prompt: basePrompt.substring(0, 4000),
       size: "1024x1024",
-      quality: "hd", // 이미지 품질을 최고 수준으로 상향
-      n: count
+      quality: "hd", 
+      n: 1 // DALL-E 3는 현재 n: 1만 지원합니다.
     });
 
     const results = [];
