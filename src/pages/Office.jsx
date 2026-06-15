@@ -237,6 +237,20 @@ export default function Office() {
     }
   }, [activeDept, showGamePreview, isProjectStarted]);
 
+  // 실시간 프로젝트 데이터 동기화 (Phaser 가이드 메시지 업데이트용)
+  useEffect(() => {
+    if (window.phaserGame) {
+      const scene = window.phaserGame.scene.getScene('OfficeScene');
+      if (scene) {
+        scene.projectData = projectData;
+        // 캐릭터와 겹치지 않은 상태일 때 즉시 텍스트 업데이트
+        if (!scene.currentDept) {
+          scene.dialogueText?.setText(scene.getGuideMessage());
+        }
+      }
+    }
+  }, [projectData]);
+
   useEffect(() => {
     const config = {
       type: Phaser.AUTO,
@@ -548,13 +562,15 @@ export default function Office() {
               <h3 style={{ marginTop: 0, color: activeDept.colorStr, flexShrink: 0 }}>📋 {activeDept.name} 보고서</h3>
               
               {/* 보고서 출력창 (유동적 크기 할당) */}
-              <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflowY: 'auto', minHeight: '150px' }}>
+              <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflowY: 'auto', minHeight: 0 }}>
                 {aiReply ? (
                   <div style={{ whiteSpace: 'pre-wrap', fontSize: '13px', color: '#e1e1e6', lineHeight: '1.6', fontFamily: 'monospace' }}>
                     {aiReply}
                   </div>
                 ) : (
-                  <p style={{ color: '#555', textAlign: 'center', marginTop: '50px' }}>지시를 기다리고 있습니다...</p>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                    <p style={{ color: '#555', textAlign: 'center' }}>지시를 기다리고 있습니다...</p>
+                  </div>
                 )}
               </div>
 
