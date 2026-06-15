@@ -349,6 +349,9 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
     return response.choices[0].message.content;
   } catch (error) {
     console.error("GPT-4o 통신 오류:", error);
+    if (error.status === 429) {
+      throw new Error("OpenAI API 한도(Quota)를 초과했거나 잔액이 부족합니다. 결제 상태를 확인해주세요.");
+    }
     throw error;
   }
 };
@@ -411,7 +414,7 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
           model: "gpt-image-1",
           prompt: basePrompt.substring(0, 4000),
           size: "1024x1024",
-          quality: "hd", 
+          // quality: "hd" is not supported by gpt-image-1, defaults to standard
           n: 1 
         });
 
