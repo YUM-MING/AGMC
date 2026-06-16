@@ -224,20 +224,34 @@ export default function Office() {
 
   // 보고서에서 에셋 관련 묘사만 추출하는 헬퍼 (카테고리 정보 포함)
   const extractedPrompts = activeDept?.id === 'content' && typeof aiReply === 'string' && aiReply ? 
-    aiReply.split('\n')
-      .map(l => l.trim())
-      .filter(l => (l.startsWith('-') || l.startsWith('*') || /^\d+\./.test(l)) && l.length > 10)
-      .map(l => {
-        const clean = l.replace(/^[-*\d.]+\s*/, '');
-        const match = clean.match(/^\[(.*?)\]\s*(.*)/);
-        if (match) {
-          const category = match[1];
-          const content = match[2];
-          const label = content.split(':')[0].trim();
-          return { category, label, prompt: content };
+    (() => {
+      const lines = aiReply.split('\n').map(l => l.trim());
+      const results = [];
+      let currentCategory = '캐릭터';
+
+      lines.forEach(line => {
+        // 카테고리 전환 감지 (예: [배경], [아이템], [캐릭터])
+        const categoryMatch = line.match(/^\[(캐릭터|배경|아이템|오브젝트)\]/);
+        if (categoryMatch) {
+          currentCategory = categoryMatch[1];
         }
-        return { category: '캐릭터', label: clean.substring(0, 15), prompt: clean };
-      })
+
+        // 실제 에셋 항목 추출 (불렛포인트나 번호로 시작하고 내용이 긴 경우)
+        // 외형, 복장, 성격 등 세부 항목이 별도 에셋으로 분리되지 않도록 ':' 가 포함된 메인 항목 위주로 추출
+        if ((line.startsWith('-') || line.startsWith('*') || /^\d+\./.test(line)) && line.length > 10) {
+          const clean = line.replace(/^[-*\d.]+\s*/, '').replace(/^\[.*?\]\s*/, '');
+          
+          // '이름:', '외형:', '배경:' 처럼 구체적인 정의가 있는 라인만 에셋 후보로 선정
+          // 단순히 세부 묘사 라인(예: "- 빨간 모자를 쓰고 있음")은 제외
+          if (clean.includes(':')) {
+            const label = clean.split(':')[0].trim();
+            const prompt = clean.trim();
+            results.push({ category: currentCategory, label, prompt });
+          }
+        }
+      });
+      return results;
+    })()
     : [];
 
   useEffect(() => {
@@ -310,6 +324,7 @@ export default function Office() {
       }
     } catch (error) {
       console.error("AI 업무 처리 중 상세 오류:", error);
+      alert("업무 처리 중 오류가 발생했습니다: " + (error.message || "알 수 없는 오류"));
     } finally {
       setLoading(false);
     }
@@ -379,12 +394,13 @@ export default function Office() {
     const match = typeof code === 'string' ? (code.match(/```javascript\n?([\s\S]*?)```/) || code.match(/```js\n?([\s\S]*?)```/) || code.match(/```([\s\S]*?)```/)) : null;
     let jsCode = match ? match[1].trim() : (typeof code === 'string' ? code : "");
 
-    jsCode = jsCode.replace(/export\s+default\s+class/g, 'class');
-    jsCode = jsCode.replace(/export\s+class/g, 'class');
+    // export 구문 제거
+    jsCode = jsCode.replace(/export\s+default\s+/g, '');
+    jsCode = jsCode.replace(/export\s+/g, '');
 
-    if (!jsCode.includes('class MainScene') && jsCode.includes('extends Phaser.Scene')) {
-      jsCode = jsCode.replace(/class\s+(\w+)\s+extends\s+Phaser\.Scene/g, 'class MainScene extends Phaser.Scene');
-    }
+    // 메인 씬 클래스 이름 찾기 (가장 먼저 나오는 Phaser.Scene 상속 클래스)
+    const sceneClassMatch = jsCode.match(/class\s+(\w+)\s+extends\s+Phaser\.Scene/);
+    const mainSceneName = sceneClassMatch ? sceneClassMatch[1] : 'MainScene';
 
     return `
       <!DOCTYPE html>
@@ -392,7 +408,7 @@ export default function Office() {
       <head>
         <meta charset="utf-8">
         <title>AGMC Prototype</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/phaser@3.88.0/dist/phaser.min.js"></script>
         <style>
           body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; }
           canvas { box-shadow: 0 0 20px rgba(76,209,55,0.5); border-radius: 8px; }
@@ -424,8 +440,8 @@ export default function Office() {
           window.onload = () => {
             if (errorDisplay.style.display !== 'none') return;
 
-            if (typeof MainScene === 'undefined') {
-              showError("MainScene 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class MainScene extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요.");
+            if (typeof ${mainSceneName} === 'undefined') {
+              showError("씬 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class ... extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요.");
               return;
             }
             
@@ -439,7 +455,7 @@ export default function Office() {
                   default: 'arcade',
                   arcade: { gravity: { y: 300 }, debug: false }
                 },
-                scene: MainScene
+                scene: ${mainSceneName}
               };
               new Phaser.Game(config);
             } catch(e) {
