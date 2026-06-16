@@ -94,7 +94,7 @@ export const GENRE_TEMPLATES = {
 const DEPT_SYSTEM_PROMPTS = {
   strategy: "당신은 AGMC의 'Strategic Planning Lead'입니다. 게임의 핵심 컨셉과 장르를 기획합니다. 회장님(사용자)이 '고전적인 방식 그대로', '우리가 아는 그 게임' 등으로 원작의 충실한 구현을 요구할 경우, 불필요한 설정이나 재해석을 덧붙이지 말고 요구사항을 100% 수용하여 클래식한 기획안을 제시하세요. 한국어로 답변하세요.",
   content: "당신은 AGMC의 'Creative Narrative Director'입니다. 시나리오와 에셋 묘사를 담당합니다. [캐릭터], [배경], [아이템] 카테고리를 명확히 구분하여 제안하세요.",
-  engineering: "당신은 AGMC의 'Technical Lead Developer'입니다. Phaser.js(v3) 전문가입니다. 반드시 제공된 '실제 에셋 목록'에 있는 ID와 URL만 사용하세요. 상상 속의 이미지를 로드하지 마세요.",
+  engineering: "당신은 AGMC의 'Technical Lead Developer'입니다. Phaser.js(v3) 전문가입니다. 반드시 제공된 '실제 에셋 목록'에 있는 ID와 URL 변수명만 사용하세요. 상상 속의 이미지를 로드하지 마세요.",
   ops: "당신은 AGMC의 'Live Operations Manager'입니다. 밸런싱과 개선안을 제시하며, 다른 부서에 수정을 요청할 수 있는 권한이 있습니다.",
   analytics: "당신은 AGMC의 'Data Insights Specialist'입니다. 프로젝트 현황을 진단하고 재미 요소를 데이터 관점에서 분석합니다."
 };
@@ -105,21 +105,23 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
   const { projectName, projectData, generatedAssets } = fullState;
   const systemPromptBase = DEPT_SYSTEM_PROMPTS[deptId];
 
+  // Base64 데이터를 프롬프트에 포함하면 TPM(토큰 한도) 초과 에러가 발생하므로, 전역 변수 참조 형태로 안내합니다.
   const assetsInfo = (generatedAssets && generatedAssets.length > 0)
-    ? generatedAssets.map(a => `- ID: "${a.id}", 설명: ${a.description}, URL: ${a.url}`).join('\n')
+    ? generatedAssets.map(a => `- ID: "${a.id}", 설명: ${a.description}, URL: window.AGMC_ASSETS["${a.id}"]`).join('\n')
     : "생성된 이미지 없음";
 
+  // 이전 컨텍스트에 Base64 이미지가 오염되어 들어간 경우를 대비해 최대 3000자로 자릅니다.
   const projectContext = `
 [공유 프로젝트 데이터: ${projectName || '무제'}]
-1. 전략기획실(컨셉): ${projectData?.strategy || '아직 작업 전'}
-2. 콘텐츠개발부(설정): ${projectData?.content || '아직 작업 전'}
+1. 전략기획실(컨셉): ${projectData?.strategy ? projectData.strategy.substring(0, 3000) : '아직 작업 전'}
+2. 콘텐츠개발부(설정): ${projectData?.content ? projectData.content.substring(0, 3000) : '아직 작업 전'}
 3. 기술구현부(코드): ${projectData?.engineering ? '코드 작성됨' : '아직 작업 전'}
-4. 라이브운영부(밸런스): ${projectData?.ops || '아직 작업 전'}
-5. 데이터인사이트부(분석): ${projectData?.analytics || '아직 작업 전'}
+4. 라이브운영부(밸런스): ${projectData?.ops ? projectData.ops.substring(0, 3000) : '아직 작업 전'}
+5. 데이터인사이트부(분석): ${projectData?.analytics ? projectData.analytics.substring(0, 3000) : '아직 작업 전'}
 
 [실제 사용 가능한 이미지 에셋 (Engineering 필수 참고)]
 ${assetsInfo}
-* 주의: 위 목록에 있는 ID만 load.image 하세요. 목록에 없는 이미지를 지어내면 실행 오류가 납니다.
+* 주의: 위 목록에 있는 ID와 URL 변수(예: window.AGMC_ASSETS["..."])를 사용하여 load.image 하세요.
 `;
 
   const finalSystemPrompt = `
@@ -144,7 +146,12 @@ ${projectContext}
   } catch (error) {
     console.error("GPT 통신 오류:", error);
     if (error.status === 401) throw new Error("API 키가 유효하지 않습니다.");
-    if (error.status === 429) throw new Error("사용 한도(Quota)를 초과했습니다. OpenAI 계정의 결제 정보를 확인해 주세요.");
+    if (error.status === 429) {
+      if (error.message && error.message.includes('tokens per min')) {
+        throw new Error("요청이 너무 깁니다(토큰 한도 초과). 에셋 묘사나 이전 컨텍스트가 너무 길어 발생했습니다.");
+      }
+      throw new Error("사용 한도(Quota)를 초과했습니다. OpenAI 계정의 결제 정보를 확인해 주세요.");
+    }
     throw error;
   }
 };
