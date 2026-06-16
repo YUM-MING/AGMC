@@ -281,12 +281,14 @@ export default function Office() {
       projectData: useProjectStore.getState().projectData,
       ceoName: useProjectStore.getState().ceoName,
       onOpenModal: (dept) => {
+        // useProjectStore.getState()를 사용하여 최신 데이터를 가져옴
+        const latestProjectData = useProjectStore.getState().projectData;
+        const savedReply = latestProjectData[dept.id] || "";
+        
         setActiveDept(dept);
         setInstruction("");
         setPreviewImages([]);
-        // useProjectStore.getState()를 사용하여 최신 데이터를 가져옴
-        const latestProjectData = useProjectStore.getState().projectData;
-        setAiReply(latestProjectData[dept.id] || "");
+        setAiReply(savedReply); // 기존에 작성된 보고서가 있다면 복구
       }
     });
 

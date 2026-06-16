@@ -252,7 +252,8 @@ const DEPT_SYSTEM_PROMPTS = {
   strategy: 
     "당신은 AGMC의 '전략기획 AI'입니다. 게임의 핵심 컨셉, 장르, 타겟 유저, 메인 루프를 기획합니다. 수익 모델(BM)은 배제하고 순수하게 '재미'와 '게임성'에 집중하세요. 최대한 구체적이고 깊이 있는 기획을 한국어로 제공하세요.",
   content: 
-    "당신은 AGMC의 '콘텐츠개발 AI'입니다. 게임의 세계관, 시나리오, 캐릭터 설정을 담당합니다.\n" +
+    "당신은 AGMC의 '콘텐츠개발 AI'입니다. 전략기획실에서 정한 게임의 핵심 컨셉을 '반드시' 계승하여 세계관, 시나리오, 캐릭터 설정을 담당합니다.\n" +
+    "다른 부서의 작업 내용을 무시하고 새로운 설정을 짜지 마세요. 이미 결정된 방향을 구체화하는 것에 집중하세요.\n" +
     "회장님의 지시를 바탕으로 필요한 비주얼 에셋(이미지)들을 제안하세요. 답변 시 반드시 아래 형식을 지켜주세요:\n\n" +
     "1. 에셋 제안은 반드시 **[캐릭터], [배경], [아이템]** 카테고리로 분류하세요.\n" +
     "2. **주인공(Protagonist)**을 가장 먼저 제안하고, 그 다음 배경, 필요한 오브젝트 순서로 작성하세요.\n" +
@@ -261,20 +262,27 @@ const DEPT_SYSTEM_PROMPTS = {
     "풍부한 창의성을 발휘하여 기술구현부가 참고할 수 있도록 상세히 답변하세요.",
   engineering: 
     "당신은 AGMC의 '기술구현 AI'입니다. Phaser.js(v3) 전문가입니다.\n" +
-    "지시사항과 다른 부서의 기획 내용을 바탕으로 **반드시 class MainScene extends Phaser.Scene** 형태의 Javascript 클래스 코드를 작성하여 게임을 최대한 높은 퀄리티로 완벽하게 구현하세요.\n\n" +
+    "전략기획부의 기획안과 콘텐츠개발부의 세계관/에셋 리스트를 '완벽하게 파악'하고 이를 바탕으로 게임을 구현하세요.\n\n" +
     "[코드 작성 가이드라인]\n" +
     "1. 클래스 이름은 **반드시 MainScene**이어야 합니다.\n" +
     "2. 코드 블록 \`\`\`javascript ... \`\`\` 안에 클래스 전체를 포함하세요.\n" +
     "3. 'export', 'import' 키워드는 절대 사용하지 마세요. (브라우저 스크립트 삽입 방식임)\n" +
     "4. 'window.onload'나 'new Phaser.Game' 같은 베이스 설정 코드는 작성하지 마세요. 오직 'class MainScene' 정의만 필요합니다.\n" +
-    "5. 에셋 사용: 콘텐츠개발부가 제안한 에셋(이미지)이 있다면 \`this.load.image('에셋명', '에셋URL')\` 형태로 preload에서 로드하여 사용하세요.\n" +
+    "5. **에셋 활용 (필수)**: 콘텐츠개발부에서 생성된 에셋 목록(Base64 URL 포함)이 있다면, 반드시 \`this.load.image('ID', 'DATA_URL')\` 형태로 preload에서 로드하여 게임 내에 배치하세요. 임의의 외부 이미지를 쓰기보다 생성된 에셋을 우선 활용하세요.\n" +
     "6. 인터랙션: 키보드 조작, 마우스 클릭 등 게임의 핵심 재미 요소를 기술적으로 완벽하게 구현하세요.\n" +
     "7. 주석: 한국어로 상세하게 작성하여 회장님이 로직을 이해할 수 있게 하세요.\n\n" +
     "회장님의 기대를 뛰어넘는 높은 퀄리티의 코드를 작성하세요.",
   ops: 
-    "당신은 AGMC의 '라이브운영 AI'입니다. 프로토타입의 난이도 밸런스, 레벨 디자인, 유저 피드백 시뮬레이션을 담당합니다. 수익 모델 관련 운영은 배제하고, 유저가 더 오래 즐겁게 플레이할 수 있는 구체적이고 전문적인 개선안을 한국어로 제안하세요.",
+    "당신은 AGMC의 '라이브운영 AI'입니다. 현재까지 진행된 기획, 에셋, 코드를 모두 검토하여 밸런싱과 개선안을 제시합니다.\n" +
+    "1. **난이도 및 밸런스**: 현재 구현된 로직의 수치(속도, 공격력, 시간 등)를 분석하여 유저가 느낄 재미를 최적화하세요.\n" +
+    "2. **에셋 피드백**: 이미 생성된 이미지들이 게임의 분위기와 맞지 않는다면 수정 방향을 구체적으로 제안하세요.\n" +
+    "3. **권한**: 당신은 기술구현부의 코드를 수정 요청하거나, 콘텐츠개발부의 에셋 수정을 지시할 수 있는 '최종 조정자' 역할을 수행합니다.\n" +
+    "수익 모델 관련 운영은 배제하고, 유저가 더 오래 즐겁게 플레이할 수 있는 전문적인 개선안을 한국어로 제안하세요.",
   analytics: 
-    "당신은 AGMC의 '데이터인사이트 AI'입니다. 게임의 재미 요소 분석, 난이도 곡선 시각화, 플레이 테스트 보고서를 담당합니다. 지표를 통해 게임의 완성도를 높이는 깊이 있는 통찰을 한국어로 제공하세요."
+    "당신은 AGMC의 '데이터인사이트 AI'입니다. 현재 프로젝트의 전체 진행 현황을 데이터 관점에서 분석합니다.\n" +
+    "1. **현황 분석**: 어떤 부서의 작업이 가장 진척되었고, 어떤 부분이 부족한지(예: 기획은 완료되었으나 에셋 부족 등)를 리포트하세요.\n" +
+    "2. **재미 요소 분석**: 기획안과 구현된 코드를 바탕으로 예상되는 재미 지표를 시각적으로(텍스트 기반 차트 등) 표현하세요.\n" +
+    "3. **제언**: 게임의 완성도를 높이기 위해 지금 당장 필요한 액션이 무엇인지 한국어로 제공하세요."
 };
 
 /**
@@ -288,7 +296,7 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
     throw new Error("OpenAI API 키가 설정되지 않았습니다. .env 파일에 VITE_OPENAI_API_KEY를 설정해주세요.");
   }
 
-  const { projectName, projectData } = fullState;
+  const { projectName, projectData, generatedAssets } = fullState;
   const systemPromptBase = DEPT_SYSTEM_PROMPTS[deptId];
   
   if (!systemPromptBase) {
@@ -297,6 +305,12 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
 
   // 토큰 제한 해제: 각 부서의 데이터를 요약 없이 원본 그대로 전달하여 퀄리티 극대화
   const getFullData = (text) => text ? text : 'Not defined yet';
+
+  // 생성된 에셋 정보 문자열화 (엔지니어가 코드에 쓸 수 있도록 ID와 URL 제공)
+  const assetsContext = generatedAssets?.length > 0 
+    ? "--- 생성된 실제 이미지 에셋 목록 (Engineering에서 활용 가능) ---\n" + 
+      generatedAssets.map(a => `ID: ${a.id}, 설명: ${a.description}, URL: ${a.url.substring(0, 100)}...`).join('\n')
+    : "아직 생성된 이미지 에셋이 없습니다.";
 
   const projectContext = `
     [CURRENT PROJECT: ${projectName || 'Unnamed Project'}]
@@ -315,6 +329,8 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
     
     --- 데이터인사이트부 데이터 ---
     ${getFullData(projectData?.analytics)}
+
+    ${assetsContext}
   `;
 
   // 기술구현부일 경우 템플릿 정보 추가 전달
@@ -327,12 +343,13 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
     ${systemPromptBase}
     ${templateGuide}
     
-    You are working on a SHARED project within AGMC. 
-    Here is the comprehensive context of what ALL other departments have done so far. Use this information fully to maximize the quality of your output:
+    당신은 AGMC 내에서 '모든 부서의 데이터를 공유하는' 전문가입니다.
+    다른 부서가 이미 결정한 컨셉, 시나리오, 에셋 정보를 '절대' 무시하지 말고 반드시 연계하여 답변하세요.
+    
+    [통합 프로젝트 컨텍스트]:
     ${projectContext}
 
-    IMPORTANT: Your response MUST be highly consistent with the work of other departments. 
-    Focus ONLY on your specific role. Do not repeat the context.
+    위 내용을 바탕으로 당신의 역할에만 집중하여 답변하세요. 컨텍스트를 다시 읊을 필요는 없습니다.
     
     CRITICAL INSTRUCTION: ALL OUTPUT MUST BE IN KOREAN (한국어). Do not use English unless it is for code snippets or specific technical terms.
   `;
@@ -413,40 +430,37 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
   const results = [];
   let isAiFailed = false;
   
-  // 1. OpenAI GPT-Image 시도
+  // 1. OpenAI GPT-Image 시도 (2를 기본으로, 안되면 1로)
   if (imageOpenai) {
     try {
-      console.log("GPT-Image-1 모델로 이미지 생성 시도 중...");
-      for (let i = 0; i < numImages; i++) {
-        const response = await imageOpenai.images.generate({
-          model: "gpt-image-1",
-          prompt: basePrompt.substring(0, 4000),
-          size: "1024x1024",
-          // quality: "hd" is not supported by gpt-image-1, defaults to standard
-          n: 1 
-        });
+      console.log("GPT-Image-2 모델로 이미지 생성 시도 중...");
+      const response = await imageOpenai.images.generate({
+        model: "gpt-image-2", 
+        prompt: basePrompt.substring(0, 1000),
+        size: "1024x1024",
+        n: numImages 
+      });
 
-        for (const item of response.data) {
-          const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
-          if (b64) {
-            const transparent = await removeWhiteBackground(b64);
-            results.push(transparent);
-          }
+      for (const item of response.data) {
+        const b64 = item.b64_json || (item.url ? await fetchAndConvertToBase64(item.url) : null);
+        if (b64) {
+          const transparent = await removeWhiteBackground(b64);
+          results.push(transparent);
         }
       }
       if (results.length > 0) return results;
     } catch (error) {
-      console.warn("GPT-Image-1 생성 실패:", error.message);
+      console.warn("GPT-Image-2 생성 실패:", error.message);
       
-      // 2. 다른 모델로 폴백 시도 (예: 이전 모델 또는 대체 모델)
-      if (error.status === 400 || error.status === 404 || error.status === 429 || error.message.includes('model') || error.message.includes('billing')) {
-        console.warn("GPT-Image-1 접근 권한이 없거나 모델을 찾을 수 없습니다. GPT-Image-2로 폴백합니다.");
-        try {
+      // 2. GPT-Image-1로 폴백 시도
+      try {
+        console.log("GPT-Image-1 모델로 폴백 시도 중...");
+        for (let i = 0; i < numImages; i++) {
           const response = await imageOpenai.images.generate({
-            model: "gpt-image-2", // 리스트에 있는 대체 모델
-            prompt: basePrompt.substring(0, 1000),
+            model: "gpt-image-1",
+            prompt: basePrompt.substring(0, 4000),
             size: "1024x1024",
-            n: numImages 
+            n: 1 
           });
 
           for (const item of response.data) {
@@ -456,12 +470,10 @@ export const requestImageGeneration = async (prompt, numImages = 1) => {
               results.push(transparent);
             }
           }
-          if (results.length > 0) return results;
-        } catch (fallbackError) {
-          console.error("GPT-Image-2 폴백 실패:", fallbackError.message);
-          isAiFailed = true;
         }
-      } else {
+        if (results.length > 0) return results;
+      } catch (fallbackError) {
+        console.error("GPT-Image-1 폴백 실패:", fallbackError.message);
         isAiFailed = true;
       }
     }
