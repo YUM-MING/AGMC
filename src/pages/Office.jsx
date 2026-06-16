@@ -401,9 +401,19 @@ export default function Office() {
     jsCode = jsCode.replace(/export\s+/g, '');
     jsCode = jsCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, ''); // import Phaser from 'phaser' 제거
 
-    // 메인 씬 클래스 이름 찾기 (가장 먼저 나오는 Phaser.Scene 상속 클래스)
-    const sceneClassMatch = jsCode.match(/class\s+(\w+)\s+extends\s+(?:Phaser\.)?Scene/);
-    const mainSceneName = sceneClassMatch ? sceneClassMatch[1] : 'MainScene';
+    // AI가 실수로 작성한 Phaser.Game 초기화 코드 제거 (캔버스 2개 생성 방지)
+    jsCode = jsCode.replace(/const\s+\w+\s*=\s*new\s+Phaser\.Game\(.*?\);?/gs, '');
+    jsCode = jsCode.replace(/new\s+Phaser\.Game\(.*?\);?/gs, '');
+
+    // 씬 클래스 이름 모두 찾기 (타이틀 씬 등 복수 씬 지원)
+    const sceneClassMatches = [...jsCode.matchAll(/class\s+(\w+)\s+extends\s+(?:Phaser\.)?Scene/g)];
+    let scenesConfig = '[]';
+    if (sceneClassMatches.length > 0) {
+      const sceneNames = sceneClassMatches.map(m => m[1]);
+      scenesConfig = `[${sceneNames.join(', ')}]`;
+    } else {
+      scenesConfig = '[MainScene]';
+    }
 
     const assetsObj = {};
     generatedAssets.forEach(a => {
@@ -455,7 +465,7 @@ export default function Office() {
               ${jsCode}
               // --- AI Generated Code End ---
 
-              if (typeof ${mainSceneName} === 'undefined') {
+              if (${sceneClassMatches.length} === 0 && typeof MainScene === 'undefined') {
                 showError("씬 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class ... extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요.");
               } else {
                 const config = {
@@ -463,11 +473,12 @@ export default function Office() {
                   width: 800,
                   height: 600,
                   parent: 'game-container',
+                  disableContextMenu: true,
                   physics: {
                     default: 'arcade',
                     arcade: { gravity: { y: 300 }, debug: false }
                   },
-                  scene: ${mainSceneName}
+                  scene: ${scenesConfig}
                 };
                 new Phaser.Game(config);
               }
