@@ -430,6 +430,9 @@ export default function Office() {
         <div id="game-container"></div>
         <div id="error-display" style="display:none"></div>
         <script>
+          // 마우스 우클릭 시 컨텍스트 메뉴 안 뜨도록 방지 (지뢰찾기 깃발 용도)
+          document.addEventListener('contextmenu', event => event.preventDefault());
+
           window.AGMC_ASSETS = ${assetsJsonStr};
           const errorDisplay = document.getElementById('error-display');
           const gameContainer = document.getElementById('game-container');
