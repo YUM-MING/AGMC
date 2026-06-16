@@ -384,6 +384,12 @@ export default function Office() {
     jsCode = jsCode.replace(/export\s+default\s+class/g, 'class');
     jsCode = jsCode.replace(/export\s+class/g, 'class');
 
+    // 만약 MainScene 대신 다른 이름의 Scene 클래스를 정의했을 경우를 대비해 보정 시도
+    // 예: class MyGame extends Phaser.Scene -> class MainScene extends Phaser.Scene
+    if (!jsCode.includes('class MainScene') && jsCode.includes('extends Phaser.Scene')) {
+      jsCode = jsCode.replace(/class\s+(\w+)\s+extends\s+Phaser\.Scene/g, 'class MainScene extends Phaser.Scene');
+    }
+
     // 프론트엔드에 미리 심어둔 베이스 프레임워크 (토큰 절약의 핵심)
     return `
       <!DOCTYPE html>
@@ -395,38 +401,57 @@ export default function Office() {
         <style>
           body { margin: 0; background: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; color: white; font-family: sans-serif; }
           canvas { box-shadow: 0 0 20px rgba(76,209,55,0.5); border-radius: 8px; }
+          #error-display { padding: 20px; text-align: center; max-width: 80%; }
+          .error-title { color: #ff4757; margin-bottom: 10px; }
+          .error-msg { font-family: monospace; background: #222; padding: 10px; border-radius: 4px; font-size: 14px; text-align: left; overflow-wrap: break-word; }
         </style>
       </head>
       <body>
         <div id="game-container"></div>
+        <div id="error-display" style="display:none"></div>
         <script>
+          const errorDisplay = document.getElementById('error-display');
+          const gameContainer = document.getElementById('game-container');
+          
+          function showError(title, msg) {
+            gameContainer.style.display = 'none';
+            errorDisplay.style.display = 'block';
+            errorDisplay.innerHTML = '<h2 class="error-title">' + title + '</h2><div class="error-msg">' + msg + '</div><p style="margin-top:20px; color:#888;">기술구현부 AI에게 오류 내용을 전달하고 수정을 요청하세요.</p>';
+          }
+
           // --- AI Generated Game Logic ---
           try {
             ${jsCode}
           } catch(e) {
             console.error("AI 코드 파싱 에러:", e);
-            document.body.innerHTML = "<h2>게임 로직 오류가 발생했습니다. 기술구현부에 수정을 요청하세요.</h2><p>" + e.message + "</p>";
+            showError("코드 구문 오류가 발생했습니다", e.message);
           }
 
           // --- Pre-defined Game Framework ---
           window.onload = () => {
+            if (errorDisplay.style.display !== 'none') return;
+
             if (typeof MainScene === 'undefined') {
-              document.getElementById('game-container').innerHTML = '<h2>MainScene 클래스가 정의되지 않았습니다.</h2><p>AI가 올바른 클래스 이름으로 코드를 작성했는지 확인하세요.</p>';
+              showError("MainScene 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class MainScene extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요. 클래스 이름이 다르거나 구문 오류로 인해 클래스가 로드되지 않았을 수 있습니다.");
               return;
             }
             
-            const config = {
-              type: Phaser.AUTO,
-              width: 800,
-              height: 600,
-              parent: 'game-container',
-              physics: {
-                default: 'arcade',
-                arcade: { gravity: { y: 300 }, debug: false }
-              },
-              scene: MainScene
-            };
-            new Phaser.Game(config);
+            try {
+              const config = {
+                type: Phaser.AUTO,
+                width: 800,
+                height: 600,
+                parent: 'game-container',
+                physics: {
+                  default: 'arcade',
+                  arcade: { gravity: { y: 300 }, debug: false }
+                },
+                scene: MainScene
+              };
+              new Phaser.Game(config);
+            } catch(e) {
+              showError("게임 실행 중 오류가 발생했습니다", e.message);
+            }
           };
         </script>
       </body>
@@ -453,14 +478,14 @@ export default function Office() {
           {projectData.engineering && (
             <button 
               onClick={() => setShowGamePreview(true)} 
-              style={{ padding: '6px 12px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', boxShadow: '0 0 10px rgba(76,209,55,0.4)' }}
+              style={{ padding: '6px 16px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', boxShadow: '0 0 15px rgba(76,209,55,0.6)', transition: 'all 0.2s' }}
             >
-              🎮 게임 플레이
+              🎮 즉시 실행
             </button>
           )}
           <button 
             onClick={() => {
-              const data = JSON.stringify({ projectName, projectData }, null, 2);
+              const data = JSON.stringify({ projectName, projectData, generatedAssets }, null, 2);
               const blob = new Blob([data], { type: 'application/json' });
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
@@ -473,6 +498,7 @@ export default function Office() {
           >
             EXPORT
           </button>
+
           <button 
             onClick={() => alert('프로젝트가 브라우저에 자동 저장되었습니다.')} 
             style={{ padding: '6px 12px', background: 'none', border: '1px solid #4cd137', color: '#4cd137', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
@@ -507,7 +533,7 @@ export default function Office() {
           </div>
           <iframe 
             srcDoc={getExecutableCode()} 
-            style={{ width: '800px', height: '600px', border: '2px solid #4cd137', borderRadius: '8px', backgroundColor: '#fff' }} 
+            style={{ width: '800px', height: '600px', border: '2px solid #4cd137', borderRadius: '8px', backgroundColor: '#000' }} 
             sandbox="allow-scripts allow-same-origin"
             title="Game Preview"
           />
@@ -569,7 +595,17 @@ export default function Office() {
 
             {/* 우측 업무 영역 */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-              <h3 style={{ marginTop: 0, color: activeDept.colorStr, flexShrink: 0 }}>📋 {activeDept.name} 보고서</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0, color: activeDept.colorStr }}>📋 {activeDept.name} 보고서</h3>
+                {activeDept.id === 'engineering' && aiReply && (
+                  <button 
+                    onClick={() => setShowGamePreview(true)} 
+                    style={{ padding: '4px 12px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', boxShadow: '0 0 10px rgba(76,209,55,0.4)' }}
+                  >
+                    🎮 프로토타입 실행
+                  </button>
+                )}
+              </div>
               
               {/* 보고서 출력창 (유동적 크기 할당) */}
               <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflow: 'auto', minHeight: 0 }}>

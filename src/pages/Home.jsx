@@ -5,7 +5,7 @@ import { useRef, useState } from 'react';
 function Home() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const { isProjectStarted, projectName, startProject, updateDeptData, resetProject, setConfig, ceoName, showSuggestions } = useProjectStore();
+  const { isProjectStarted, projectName, importProject, resetProject, setConfig, ceoName, showSuggestions } = useProjectStore();
 
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [localCeoName, setLocalCeoName] = useState(ceoName);
@@ -38,18 +38,21 @@ function Home() {
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target.result);
+        // 필수 필드 확인 (projectName, projectData)
         if (data.projectName && data.projectData) {
-          startProject(data.projectName);
-          Object.keys(data.projectData).forEach(deptId => {
-            updateDeptData(deptId, data.projectData[deptId]);
-          });
+          importProject(data.projectName, data.projectData, data.generatedAssets);
           alert('프로젝트를 성공적으로 불러왔습니다!');
+          if (showConfigModal) setShowConfigModal(false);
           navigate('/office');
         } else {
           alert('올바르지 않은 프로젝트 파일입니다.');
         }
-      } catch {
+      } catch (error) {
+        console.error(error);
         alert('파일을 읽는 중 오류가 발생했습니다.');
+      } finally {
+        // 동일한 파일을 다시 선택할 수 있도록 input 초기화
+        e.target.value = '';
       }
     };
     reader.readAsText(file);
@@ -131,6 +134,16 @@ function Home() {
               <label htmlFor="homeShowSuggestions" style={{ color: '#aaa', fontSize: '14px', cursor: 'pointer' }}>
                 부서별 초보자용 예시(가이드) 표시 켜기
               </label>
+            </div>
+
+            <div style={{ padding: '20px', backgroundColor: '#000', borderRadius: '8px', border: '1px dashed #444', marginBottom: '30px', textAlign: 'center' }}>
+              <p style={{ color: '#888', fontSize: '12px', margin: '0 0 15px 0' }}>외부에서 백업한 프로젝트 파일(.json)이 있나요?</p>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                style={{ width: '100%', padding: '10px', backgroundColor: '#1a1a1a', border: '1px solid #00a8ff', color: '#00a8ff', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+              >
+                📁 백업 파일 불러오기 (IMPORT)
+              </button>
             </div>
 
             <div style={{ display: 'flex', gap: '15px' }}>
