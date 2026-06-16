@@ -394,13 +394,22 @@ export default function Office() {
     const match = typeof code === 'string' ? (code.match(/```javascript\n?([\s\S]*?)```/) || code.match(/```js\n?([\s\S]*?)```/) || code.match(/```([\s\S]*?)```/)) : null;
     let jsCode = match ? match[1].trim() : (typeof code === 'string' ? code : "");
 
-    // export 구문 제거
+    // export 구문 및 import 구문 제거 (브라우저 스크립트 실행 환경 호환용)
+    jsCode = jsCode.replace(/export\s+default\s+class/g, 'class');
     jsCode = jsCode.replace(/export\s+default\s+/g, '');
+    jsCode = jsCode.replace(/export\s+class/g, 'class');
     jsCode = jsCode.replace(/export\s+/g, '');
+    jsCode = jsCode.replace(/import\s+.*?from\s+['"].*?['"];?/g, ''); // import Phaser from 'phaser' 제거
 
     // 메인 씬 클래스 이름 찾기 (가장 먼저 나오는 Phaser.Scene 상속 클래스)
-    const sceneClassMatch = jsCode.match(/class\s+(\w+)\s+extends\s+Phaser\.Scene/);
+    const sceneClassMatch = jsCode.match(/class\s+(\w+)\s+extends\s+(?:Phaser\.)?Scene/);
     const mainSceneName = sceneClassMatch ? sceneClassMatch[1] : 'MainScene';
+
+    const assetsObj = {};
+    generatedAssets.forEach(a => {
+      assetsObj[a.id] = a.url;
+    });
+    const assetsJsonStr = JSON.stringify(assetsObj);
 
     return `
       <!DOCTYPE html>
@@ -421,6 +430,7 @@ export default function Office() {
         <div id="game-container"></div>
         <div id="error-display" style="display:none"></div>
         <script>
+          window.AGMC_ASSETS = ${assetsJsonStr};
           const errorDisplay = document.getElementById('error-display');
           const gameContainer = document.getElementById('game-container');
           
@@ -430,36 +440,37 @@ export default function Office() {
             errorDisplay.innerHTML = '<h2 class="error-title">' + title + '</h2><div class="error-msg">' + msg + '</div><p style="margin-top:20px; color:#888;">기술구현부 AI에게 오류 내용을 전달하고 수정을 요청하세요.</p>';
           }
 
-          try {
-            ${jsCode}
-          } catch(e) {
-            console.error("AI 코드 파싱 에러:", e);
-            showError("코드 구문 오류가 발생했습니다", e.message);
-          }
-
+          window.onerror = function(msg, url, lineNo, columnNo, error) {
+            showError("구문 또는 런타임 오류가 발생했습니다", msg);
+            return false;
+          };
+        </script>
+        <script>
           window.onload = () => {
-            if (errorDisplay.style.display !== 'none') return;
-
-            if (typeof ${mainSceneName} === 'undefined') {
-              showError("씬 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class ... extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요.");
-              return;
-            }
-            
             try {
-              const config = {
-                type: Phaser.AUTO,
-                width: 800,
-                height: 600,
-                parent: 'game-container',
-                physics: {
-                  default: 'arcade',
-                  arcade: { gravity: { y: 300 }, debug: false }
-                },
-                scene: ${mainSceneName}
-              };
-              new Phaser.Game(config);
+              // --- AI Generated Code Start ---
+              ${jsCode}
+              // --- AI Generated Code End ---
+
+              if (typeof ${mainSceneName} === 'undefined') {
+                showError("씬 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class ... extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요.");
+              } else {
+                const config = {
+                  type: Phaser.AUTO,
+                  width: 800,
+                  height: 600,
+                  parent: 'game-container',
+                  physics: {
+                    default: 'arcade',
+                    arcade: { gravity: { y: 300 }, debug: false }
+                  },
+                  scene: ${mainSceneName}
+                };
+                new Phaser.Game(config);
+              }
             } catch(e) {
-              showError("게임 실행 중 오류가 발생했습니다", e.message);
+              console.error("AI 코드 파싱/실행 에러:", e);
+              showError("코드 실행 중 오류가 발생했습니다", e.message);
             }
           };
         </script>
