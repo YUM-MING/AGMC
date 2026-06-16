@@ -34,13 +34,13 @@ class OfficeScene extends Phaser.Scene {
     this.walls = null; // 벽 그룹
     this.projectData = null;
 
-    // 배경 그림의 가구 배치에 맞춰 부서 위치 재조정 (가정된 레이아웃)
+    // 부서 위치 및 전문 AI 사원 이름 최적화
     this.departments = [
-      { id: 'strategy', name: '전략기획실', color: 0x00a8ff, colorStr: '#00a8ff', x: 150, y: 220, ai: 'Concept Specialist' },
-      { id: 'content', name: '콘텐츠개발부', color: 0xe84118, colorStr: '#e84118', x: 650, y: 220, ai: 'Visual & Story Director' },
-      { id: 'engineering', name: '기술구현부', color: 0x4cd137, colorStr: '#4cd137', x: 150, y: 450, ai: 'Lead Developer' },
-      { id: 'ops', name: '라이브운영부', color: 0xfbc531, colorStr: '#fbc531', x: 650, y: 450, ai: 'Balance Optimizer' },
-      { id: 'analytics', name: '데이터인사이트부', color: 0x9c88ff, colorStr: '#9c88ff', x: 400, y: 350, ai: 'Fun Factor Analyst' },
+      { id: 'strategy', name: '전략기획실', color: 0x00a8ff, colorStr: '#00a8ff', x: 150, y: 220, ai: 'Strategic Planning Lead' },
+      { id: 'content', name: '콘텐츠개발부', color: 0xe84118, colorStr: '#e84118', x: 650, y: 220, ai: 'Creative Narrative Director' },
+      { id: 'engineering', name: '기술구현부', color: 0x4cd137, colorStr: '#4cd137', x: 150, y: 450, ai: 'Technical Lead Developer' },
+      { id: 'ops', name: '라이브운영부', color: 0xfbc531, colorStr: '#fbc531', x: 650, y: 450, ai: 'Live Operations Manager' },
+      { id: 'analytics', name: '데이터인사이트부', color: 0x9c88ff, colorStr: '#9c88ff', x: 400, y: 350, ai: 'Data Insights Specialist' },
     ];
   }
 
@@ -222,7 +222,7 @@ export default function Office() {
   const [showGamePreview, setShowGamePreview] = useState(false);
   const [previewImages, setPreviewImages] = useState([]); // 생성된 이미지 미리보기
 
-  // 보고서에서 에셋 관련 묘사만 추출하는 헬퍼
+  // 보고서에서 에셋 관련 묘사만 추출하는 헬퍼 (카테고리 정보 포함)
   const extractedPrompts = activeDept?.id === 'content' && typeof aiReply === 'string' && aiReply ? 
     aiReply.split('\n')
       .map(l => l.trim())
@@ -236,7 +236,7 @@ export default function Office() {
           const label = content.split(':')[0].trim();
           return { category, label, prompt: content };
         }
-        return { category: '에셋', label: clean.substring(0, 15), prompt: clean };
+        return { category: '캐릭터', label: clean.substring(0, 15), prompt: clean };
       })
     : [];
 
@@ -247,13 +247,12 @@ export default function Office() {
     }
   }, [activeDept, showGamePreview, isProjectStarted]);
 
-  // 실시간 프로젝트 데이터 동기화 (Phaser 가이드 메시지 업데이트용)
+  // 실시간 프로젝트 데이터 동기화
   useEffect(() => {
     if (window.phaserGame) {
       const scene = window.phaserGame.scene.getScene('OfficeScene');
       if (scene) {
         scene.projectData = projectData;
-        // 캐릭터와 겹치지 않은 상태일 때 즉시 텍스트 업데이트
         if (!scene.currentDept) {
           scene.dialogueText?.setText(scene.getGuideMessage());
         }
@@ -281,14 +280,13 @@ export default function Office() {
       projectData: useProjectStore.getState().projectData,
       ceoName: useProjectStore.getState().ceoName,
       onOpenModal: (dept) => {
-        // useProjectStore.getState()를 사용하여 최신 데이터를 가져옴
         const latestProjectData = useProjectStore.getState().projectData;
         const savedReply = latestProjectData[dept.id] || "";
         
         setActiveDept(dept);
         setInstruction("");
         setPreviewImages([]);
-        setAiReply(savedReply); // 기존에 작성된 보고서가 있다면 복구
+        setAiReply(savedReply); // 기존 데이터 확실히 복구
       }
     });
 
@@ -296,31 +294,28 @@ export default function Office() {
       game.destroy(true);
       window.phaserGame = null;
     };
-  }, []); // 빈 배열로 설정하여 한 번만 생성되도록 함
+  }, []);
 
   const handleApprove = async () => {
     if (!activeDept || !instruction.trim()) return alert("지시 내용을 입력하세요.");
     setLoading(true);
 
     try {
-      const fullState = { projectName, projectData, generatedAssets }; // 생성된 에셋 정보 추가 전달
+      const fullState = { projectName, projectData, generatedAssets }; 
       const reply = await requestAiTask(activeDept.id, instruction, fullState);
       
-      // 비동기 작업 도중 부서 모달이 닫혔을 경우를 대비
       if (reply) {
         setAiReply(reply);
         updateDeptData(activeDept.id, reply);
       }
     } catch (error) {
-      // 출력은 잘 되는데 알림이 뜨는 불편함을 해결하기 위해 alert 제거 후 콘솔 로그로 대체
       console.error("AI 업무 처리 중 상세 오류:", error);
     } finally {
-      setLoading(true); // 로딩 상태를 잠시 유지하여 상태 반영 시간 확보
-      setTimeout(() => setLoading(false), 500);
+      setLoading(false);
     }
   };
 
-  const handleGenerateImage = async (customPrompt) => {
+  const handleGenerateImage = async (customPrompt, category = "캐릭터") => {
     const targetPrompt = typeof customPrompt === 'string' ? customPrompt : instruction;
     if (!targetPrompt.trim()) return alert("이미지 생성을 위한 설명을 입력하세요.");
     
@@ -328,8 +323,8 @@ export default function Office() {
     setPreviewImages([]);
 
     try {
-      // 2개의 시안을 생성하여 선택할 수 있게 함
-      const urls = await requestImageGeneration(targetPrompt, 2); 
+      // 카테고리 정보(배경, 아이템 등)를 AI에게 명확히 전달
+      const urls = await requestImageGeneration(targetPrompt, 2, category); 
       setPreviewImages(urls.map(url => ({ url, description: targetPrompt })));
     } catch (error) {
       console.error(error);
@@ -340,7 +335,6 @@ export default function Office() {
   };
 
   const applySelectedImage = (imgObj) => {
-    // 컴포넌트 외부의 유틸리티 함수를 호출하여 ID 생성
     const id = generateAssetId();
     const newAsset = { id, url: imgObj.url, description: imgObj.description };
     addAsset(newAsset);
@@ -376,29 +370,22 @@ export default function Office() {
     setInstruction(prompt);
   };
 
-  // 키보드 이벤트 버블링 방지 헬퍼
   const stopPropagation = (e) => e.stopPropagation();
 
-  // 엔지니어링 코드에서 순수 HTML만 추출하는 헬퍼 함수
   const getExecutableCode = () => {
     const code = projectData.engineering;
     if (!code) return "";
     
-    // AI가 작성한 순수 Javascript (MainScene 클래스)만 추출
     const match = typeof code === 'string' ? (code.match(/```javascript\n?([\s\S]*?)```/) || code.match(/```js\n?([\s\S]*?)```/) || code.match(/```([\s\S]*?)```/)) : null;
     let jsCode = match ? match[1].trim() : (typeof code === 'string' ? code : "");
 
-    // AI가 실수로 모듈 export 문법을 썼을 경우 제거 (브라우저 script 태그 삽입 오류 방지)
     jsCode = jsCode.replace(/export\s+default\s+class/g, 'class');
     jsCode = jsCode.replace(/export\s+class/g, 'class');
 
-    // 만약 MainScene 대신 다른 이름의 Scene 클래스를 정의했을 경우를 대비해 보정 시도
-    // 예: class MyGame extends Phaser.Scene -> class MainScene extends Phaser.Scene
     if (!jsCode.includes('class MainScene') && jsCode.includes('extends Phaser.Scene')) {
       jsCode = jsCode.replace(/class\s+(\w+)\s+extends\s+Phaser\.Scene/g, 'class MainScene extends Phaser.Scene');
     }
 
-    // 프론트엔드에 미리 심어둔 베이스 프레임워크 (토큰 절약의 핵심)
     return `
       <!DOCTYPE html>
       <html>
@@ -427,7 +414,6 @@ export default function Office() {
             errorDisplay.innerHTML = '<h2 class="error-title">' + title + '</h2><div class="error-msg">' + msg + '</div><p style="margin-top:20px; color:#888;">기술구현부 AI에게 오류 내용을 전달하고 수정을 요청하세요.</p>';
           }
 
-          // --- AI Generated Game Logic ---
           try {
             ${jsCode}
           } catch(e) {
@@ -435,12 +421,11 @@ export default function Office() {
             showError("코드 구문 오류가 발생했습니다", e.message);
           }
 
-          // --- Pre-defined Game Framework ---
           window.onload = () => {
             if (errorDisplay.style.display !== 'none') return;
 
             if (typeof MainScene === 'undefined') {
-              showError("MainScene 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class MainScene extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요. 클래스 이름이 다르거나 구문 오류로 인해 클래스가 로드되지 않았을 수 있습니다.");
+              showError("MainScene 클래스가 정의되지 않았습니다", "AI가 작성한 코드에 'class MainScene extends Phaser.Scene' 정의가 포함되어 있는지 확인하세요.");
               return;
             }
             
@@ -511,7 +496,6 @@ export default function Office() {
           >
             EXPORT
           </button>
-
           <button 
             onClick={() => alert('프로젝트가 브라우저에 자동 저장되었습니다.')} 
             style={{ padding: '5px 10px', background: 'none', border: '1px solid #4cd137', color: '#4cd137', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
@@ -532,7 +516,6 @@ export default function Office() {
         boxShadow: '0 20px 50px rgba(0,0,0,0.8)', border: '1px solid #222'
       }}></div>
 
-      {/* 게임 실행 프리뷰 모달 */}
       {showGamePreview && (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.95)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 300 }}>
           <div style={{ width: '800px', display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -550,17 +533,13 @@ export default function Office() {
             sandbox="allow-scripts allow-same-origin"
             title="Game Preview"
           />
-          <p style={{ marginTop: '10px', color: '#888', fontSize: '12px' }}>
-            * 게임 플레이 중에는 마우스로 게임 화면을 한 번 클릭해야 키보드 조작이 가능합니다.
-          </p>
         </div>
       )}
 
       {!isProjectStarted && (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200 }}>
-          <div style={{ backgroundColor: '#16161a', border: '2px solid #00a8ff', borderRadius: '12px', width: '450px', padding: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxSizing: 'border-box' }}>
-            <h2 style={{ color: '#00a8ff', marginTop: 0, width: '100%' }}>🏢 프로젝트 시작</h2>
-            <p style={{ color: '#aaa', fontSize: '14px', marginBottom: '30px', width: '100%' }}>새로운 게임 프로젝트의 이름을 지어주세요.</p>
+          <div style={{ backgroundColor: '#16161a', border: '2px solid #00a8ff', borderRadius: '12px', width: '450px', padding: '40px', textAlign: 'center', display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+            <h2 style={{ color: '#00a8ff', marginTop: 0 }}>🏢 프로젝트 시작</h2>
             <input 
               type="text" 
               value={newProjectName}
@@ -569,21 +548,16 @@ export default function Office() {
               placeholder="프로젝트 이름 입력..."
               style={{ width: '100%', padding: '15px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '4px', marginBottom: '25px', textAlign: 'center', fontSize: '18px', boxSizing: 'border-box' }}
             />
-            
-            {/* 초보자용 가이드 설정 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '25px', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '25px' }}>
               <input 
                 type="checkbox" 
                 id="showSuggestions"
                 checked={localShowSuggestions}
                 onChange={(e) => setLocalShowSuggestions(e.target.checked)}
-                style={{ cursor: 'pointer', width: '16px', height: '16px' }}
+                style={{ cursor: 'pointer' }}
               />
-              <label htmlFor="showSuggestions" style={{ color: '#aaa', fontSize: '13px', cursor: 'pointer' }}>
-                부서별 초보자용 기획 가이드 및 템플릿 표시
-              </label>
+              <label htmlFor="showSuggestions" style={{ color: '#aaa', fontSize: '13px' }}>부서별 가이드 표시</label>
             </div>
-
             <button 
               onClick={handleStartProject}
               style={{ width: '100%', padding: '15px', backgroundColor: '#00a8ff', border: 'none', color: '#000', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px', borderRadius: '4px' }}
@@ -597,174 +571,72 @@ export default function Office() {
       {activeDept && (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100 }}>
           <div style={{ backgroundColor: '#16161a', border: `2px solid ${activeDept.colorStr}`, borderRadius: '12px', width: '800px', padding: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', gap: '20px', maxHeight: '90vh', boxSizing: 'border-box' }}>
-            
-            {/* 좌측 캐릭터 프로필 */}
             <div style={{ width: '200px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-              <div style={{ width: '200px', height: '200px', backgroundColor: '#000', borderRadius: '8px', border: `1px solid ${activeDept.colorStr}`, marginBottom: '10px', overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: '200px', height: '200px', backgroundColor: '#000', borderRadius: '8px', border: `1px solid ${activeDept.colorStr}`, marginBottom: '10px', overflow: 'hidden' }}>
                 <img src={DEPT_ASSETS[activeDept.id].path} alt={activeDept.ai} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <h4 style={{ margin: '0', color: activeDept.colorStr, fontSize: '15px' }}>{activeDept.ai}</h4>
             </div>
-
-            {/* 우측 업무 영역 */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
                 <h3 style={{ margin: 0, color: activeDept.colorStr }}>📋 {activeDept.name} 보고서</h3>
                 {activeDept.id === 'engineering' && aiReply && (
-                  <button 
-                    onClick={() => setShowGamePreview(true)} 
-                    style={{ padding: '4px 12px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', boxShadow: '0 0 10px rgba(76,209,55,0.4)' }}
-                  >
-                    🎮 프로토타입 실행
-                  </button>
+                  <button onClick={() => setShowGamePreview(true)} style={{ padding: '4px 12px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>🎮 프로토타입 실행</button>
                 )}
               </div>
-              
-              {/* 보고서 출력창 (유동적 크기 할당) */}
-              <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflow: 'auto', minHeight: 0 }}>
+              <div style={{ flex: 1, backgroundColor: '#0f0f12', padding: '15px', border: '1px solid #2a2a35', borderRadius: '4px', marginBottom: '15px', overflow: 'auto' }}>
                 {aiReply ? (
-                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '13px', color: '#e1e1e6', lineHeight: '1.6', fontFamily: 'monospace' }}>
-                    {aiReply}
-                  </div>
+                  <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: '13px', color: '#e1e1e6', lineHeight: '1.6', fontFamily: 'monospace' }}>{aiReply}</div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                    <p style={{ color: '#555', textAlign: 'center' }}>지시를 기다리고 있습니다...</p>
-                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><p style={{ color: '#555' }}>지시를 기다리고 있습니다...</p></div>
                 )}
               </div>
-
-              {/* [전략기획부 전용] 초보자용 기획 제안 리스트 */}
-              {activeDept.id === 'strategy' && showSuggestions && !aiReply && (
-                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #00a8ff' }}>
-                  <h5 style={{ margin: '0 0 8px 0', color: '#00a8ff', fontSize: '12px' }}>💡 게임 기획이 처음이신가요? (예시 선택)</h5>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {STRATEGY_SUGGESTIONS.map((suggestion, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => applyStrategyTemplate(suggestion.prompt)}
-                        style={{ padding: '6px 10px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #00a8ff', borderRadius: '4px', cursor: 'pointer' }}
-                      >
-                        {suggestion.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* [기술구현부 전용] 장르 템플릿 제안 리스트 */}
-              {activeDept.id === 'engineering' && showSuggestions && (
-                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #4cd137' }}>
-                  <h5 style={{ margin: '0 0 8px 0', color: '#4cd137', fontSize: '12px' }}>🛠️ 게임 기초 템플릿 제안 (빠른 시작)</h5>
-                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
-                    {Object.entries(GENRE_TEMPLATES).map(([key, template]) => (
-                      <button 
-                        key={key}
-                        onClick={() => applyEngineeringTemplate(key)}
-                        style={{ padding: '6px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #4cd137', borderRadius: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}
-                        title={template.description}
-                      >
-                        {template.name} 적용
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* [콘텐츠 개발부 전용] 에셋 제안 리스트 */}
               {activeDept.id === 'content' && extractedPrompts.length > 0 && (
                 <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #e84118' }}>
-                  <h5 style={{ margin: '0 0 8px 0', color: '#e84118', fontSize: '12px' }}>✨ 제안된 에셋 추출 결과 (순서대로 생성 권장)</h5>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#e84118', fontSize: '12px' }}>✨ 제안된 에셋 추출 결과</h5>
                   <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
                     {extractedPrompts.map((item, idx) => (
-                      <button 
-                        key={idx}
-                        onClick={() => handleGenerateImage(item.prompt)}
-                        disabled={imgLoading}
-                        style={{ padding: '4px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #444', borderRadius: '15px', whiteSpace: 'nowrap', cursor: 'pointer', opacity: imgLoading ? 0.5 : 1 }}
-                      >
+                      <button key={idx} onClick={() => handleGenerateImage(item.prompt, item.category)} disabled={imgLoading} style={{ padding: '4px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #444', borderRadius: '15px', whiteSpace: 'nowrap', cursor: 'pointer', opacity: imgLoading ? 0.5 : 1 }}>
                         {item.category === '캐릭터' ? '👤' : item.category === '배경' ? '🖼️' : '📦'} [{item.category}] {item.label}...
                       </button>
                     ))}
                   </div>
                 </div>
               )}
-
-              {/* 이미지 생성 중 로딩 오버레이 */}
               {imgLoading && (
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', zIndex: 160, borderRadius: '12px' }}>
-                  <style>{`
-                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                    @keyframes pulseText { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-                  `}</style>
                   <div style={{ width: '50px', height: '50px', border: '5px solid #333', borderTop: '5px solid #e84118', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '20px' }}></div>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#e84118', fontSize: '22px', animation: 'pulseText 1.5s infinite' }}>🎨 AI가 에셋을 열심히 그리는 중입니다...</h3>
-                  <p style={{ fontSize: '14px', color: '#aaa', margin: 0 }}>복잡도에 따라 약 10~20초 정도 소요될 수 있습니다.<br/>잠시만 기다려주세요!</p>
+                  <h3 style={{ color: '#e84118' }}>🎨 AI가 에셋을 열심히 그리는 중입니다...</h3>
                 </div>
               )}
-
-              {/* 이미지 생성 미리보기 (선택 창) */}
               {previewImages.length > 0 && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', backgroundColor: '#16161a', border: '2px solid #9c88ff', padding: '20px', borderRadius: '12px', zIndex: 150, textAlign: 'center', boxShadow: '0 0 50px rgba(0,0,0,1)' }}>
-                  <h4 style={{ margin: '0 0 15px 0', color: '#9c88ff' }}>🎨 생성된 에셋 시안</h4>
-                  <p style={{ fontSize: '12px', color: '#aaa', marginBottom: '20px' }}>마음에 드는 버전을 선택하여 프로젝트에 적용하세요.</p>
+                  <h4 style={{ color: '#9c88ff' }}>🎨 생성된 에셋 시안</h4>
                   <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginBottom: '20px' }}>
                     {previewImages.map((img, idx) => (
-                      <div key={idx} style={{ textAlign: 'center' }}>
+                      <div key={idx}>
                         <div style={{ width: '150px', height: '150px', backgroundColor: '#000', border: '1px solid #333', borderRadius: '8px', marginBottom: '10px', overflow: 'hidden' }}>
                           <img src={img.url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </div>
-                        <button 
-                          onClick={() => applySelectedImage(img)}
-                          style={{ padding: '6px 15px', backgroundColor: '#9c88ff', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}
-                        >
-                          이걸로 적용
-                        </button>
+                        <button onClick={() => applySelectedImage(img)} style={{ padding: '6px 15px', backgroundColor: '#9c88ff', border: 'none', color: '#fff', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}>이걸로 적용</button>
                       </div>
                     ))}
                   </div>
                   <button onClick={() => setPreviewImages([])} style={{ background: 'none', border: 'none', color: '#888', textDecoration: 'underline', cursor: 'pointer' }}>취소</button>
                 </div>
               )}
-
-              {/* 지시사항 입력창 (고정 크기) */}
               <div style={{ flexShrink: 0, marginBottom: '15px' }}>
-                <textarea 
-                  value={instruction}
-                  onChange={(e) => setInstruction(e.target.value)}
-                  onKeyDown={stopPropagation}
-                  placeholder="추가 지시사항을 입력하세요..."
-                  style={{ width: '100%', height: '80px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '10px', boxSizing: 'border-box', resize: 'none' }}
-                />
+                <textarea value={instruction} onChange={(e) => setInstruction(e.target.value)} onKeyDown={stopPropagation} placeholder="추가 지시사항을 입력하세요..." style={{ width: '100%', height: '80px', backgroundColor: '#222', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '10px', boxSizing: 'border-box', resize: 'none' }} />
               </div>
-
-              {/* 하단 버튼 영역 */}
               <div style={{ display: 'flex', justifyContent: 'end', gap: '10px', flexShrink: 0 }}>
                 <button onClick={handleClose} style={{ padding: '8px 20px', backgroundColor: '#333', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '4px' }}>닫기</button>
-                {activeDept.id === 'content' && (
-                  <button 
-                    onClick={handleGenerateImage}
-                    disabled={imgLoading}
-                    style={{ padding: '8px 20px', backgroundColor: '#9c88ff', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px', opacity: imgLoading ? 0.5 : 1 }}
-                  >
-                    {imgLoading ? "그리는 중..." : "이미지 생성"}
-                  </button>
-                )}
-                <button 
-                  onClick={handleApprove}
-                  disabled={loading}
-                  style={{ padding: '8px 25px', backgroundColor: activeDept.colorStr, border: 'none', color: '#000', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px', opacity: loading ? 0.5 : 1 }}
-                >
-                  {loading ? "연산 중..." : "지시 완료"}
-                </button>
+                <button onClick={handleApprove} disabled={loading} style={{ padding: '8px 25px', backgroundColor: activeDept.colorStr, border: 'none', color: '#000', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px', opacity: loading ? 0.5 : 1 }}>{loading ? "연산 중..." : "지시 완료"}</button>
               </div>
             </div>
-
           </div>
-
-          {/* 생성된 에셋 갤러리 (콘텐츠 개발부에서만 표시) */}
           {activeDept.id === 'content' && generatedAssets?.length > 0 && (
             <div style={{ position: 'absolute', right: '20px', top: '20px', width: '250px', backgroundColor: '#16161a', border: '1px solid #e84118', borderRadius: '8px', padding: '15px', maxHeight: '80vh', overflowY: 'auto' }}>
-              <h4 style={{ margin: '0 0 10px 0', color: '#e84118' }}>🖼️ 생성된 에셋</h4>
+              <h4 style={{ color: '#e84118' }}>🖼️ 생성된 에셋</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {generatedAssets.map(asset => (
                   <div key={asset.id} style={{ border: '1px solid #333', borderRadius: '4px', overflow: 'hidden' }}>
