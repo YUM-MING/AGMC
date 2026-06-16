@@ -239,14 +239,16 @@ export default function Office() {
         // 실제 에셋 항목 추출 (불렛포인트나 번호로 시작하고 내용이 긴 경우)
         // 외형, 복장, 성격 등 세부 항목이 별도 에셋으로 분리되지 않도록 ':' 가 포함된 메인 항목 위주로 추출
         if ((line.startsWith('-') || line.startsWith('*') || /^\d+\./.test(line)) && line.length > 10) {
-          const clean = line.replace(/^[-*\d.]+\s*/, '').replace(/^\[.*?\]\s*/, '');
+          const clean = line.replace(/^[-*\d.]+\s*/, '').trim();
           
-          // '이름:', '외형:', '배경:' 처럼 구체적인 정의가 있는 라인만 에셋 후보로 선정
-          // 단순히 세부 묘사 라인(예: "- 빨간 모자를 쓰고 있음")은 제외
-          if (clean.includes(':')) {
-            const label = clean.split(':')[0].trim();
-            const prompt = clean.trim();
-            results.push({ category: currentCategory, label, prompt });
+          const strictMatch = clean.match(/^\[(캐릭터|배경|아이템|오브젝트)\]\s*(.*?)\s*:\s*(.*)/);
+          if (strictMatch) {
+            const category = strictMatch[1];
+            const label = strictMatch[2].trim();
+            const prompt = strictMatch[3].trim();
+            if (label && prompt.length > 5) {
+              results.push({ category, label, prompt: `${label} - ${prompt}` });
+            }
           }
         }
       });
