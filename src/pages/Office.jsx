@@ -591,6 +591,31 @@ export default function Office() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><p style={{ color: '#555' }}>지시를 기다리고 있습니다...</p></div>
                 )}
               </div>
+
+              {/* [전략기획부] 초보자용 가이드 */}
+              {activeDept.id === 'strategy' && showSuggestions && !aiReply && (
+                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #00a8ff' }}>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#00a8ff', fontSize: '12px' }}>💡 게임 기획이 처음이신가요? (예시 선택)</h5>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {STRATEGY_SUGGESTIONS.map((suggestion, idx) => (
+                      <button key={idx} onClick={() => applyStrategyTemplate(suggestion.prompt)} style={{ padding: '6px 10px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #00a8ff', borderRadius: '4px', cursor: 'pointer' }}>{suggestion.name}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* [기술구현부] 장르 템플릿 제안 */}
+              {activeDept.id === 'engineering' && showSuggestions && (
+                <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #4cd137' }}>
+                  <h5 style={{ margin: '0 0 8px 0', color: '#4cd137', fontSize: '12px' }}>🛠️ 게임 기초 템플릿 제안 (빠른 시작)</h5>
+                  <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '5px' }}>
+                    {Object.entries(GENRE_TEMPLATES).map(([key, template]) => (
+                      <button key={key} onClick={() => applyEngineeringTemplate(key)} style={{ padding: '6px 12px', fontSize: '11px', backgroundColor: '#333', color: '#fff', border: '1px solid #4cd137', borderRadius: '4px', whiteSpace: 'nowrap', cursor: 'pointer' }}>{template.name} 적용</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {activeDept.id === 'content' && extractedPrompts.length > 0 && (
                 <div style={{ flexShrink: 0, marginBottom: '15px', padding: '10px', backgroundColor: '#1a1a20', borderRadius: '4px', border: '1px solid #e84118' }}>
                   <h5 style={{ margin: '0 0 8px 0', color: '#e84118', fontSize: '12px' }}>✨ 제안된 에셋 추출 결과</h5>
