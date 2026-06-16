@@ -462,11 +462,11 @@ export default function Office() {
         <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
           <h2 style={{ margin: 0, color: '#00a8ff', letterSpacing: '2px', fontSize: '20px' }}>AGMC HQ</h2>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <div style={{ padding: '3px 8px', backgroundColor: 'rgba(0,168,255,0.1)', border: '1px solid #00a8ff', borderRadius: '4px', color: '#00a8ff', fontSize: '11px', fontWeight: 'bold' }}>
+            <div style={{ padding: '3px 8px', backgroundColor: 'rgba(0,168,255,0.1)', border: '1px solid #00a8ff', borderRadius: '4px', color: '#00a8ff', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1' }}>
               CEO: {ceoName}
             </div>
             {isProjectStarted && (
-              <div style={{ padding: '3px 8px', backgroundColor: 'rgba(76,209,55,0.1)', border: '1px solid #4cd137', borderRadius: '4px', color: '#4cd137', fontSize: '11px', fontWeight: 'bold' }}>
+              <div style={{ padding: '3px 8px', backgroundColor: 'rgba(76,209,55,0.1)', border: '1px solid #4cd137', borderRadius: '4px', color: '#4cd137', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: '1' }}>
                 PROJ: {projectName}
               </div>
             )}
