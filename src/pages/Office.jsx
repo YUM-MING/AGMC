@@ -466,19 +466,24 @@ export default function Office() {
       color: '#fff', fontFamily: 'Arial, sans-serif', position: 'relative'
     }}>
       <div style={{ width: '800px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-          <h2 style={{ margin: 0, color: '#00a8ff', letterSpacing: '2px' }}>AGMC HQ - {ceoName}의 집무실</h2>
-          {isProjectStarted && (
-            <div style={{ padding: '4px 12px', border: '1px solid #4cd137', borderRadius: '4px', color: '#4cd137', fontSize: '13px', fontWeight: 'bold' }}>
-              PROJ: {projectName}
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <h2 style={{ margin: 0, color: '#00a8ff', letterSpacing: '2px', fontSize: '20px' }}>AGMC HQ</h2>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ padding: '3px 8px', backgroundColor: 'rgba(0,168,255,0.1)', border: '1px solid #00a8ff', borderRadius: '4px', color: '#00a8ff', fontSize: '11px', fontWeight: 'bold' }}>
+              CEO: {ceoName}
             </div>
-          )}
+            {isProjectStarted && (
+              <div style={{ padding: '3px 8px', backgroundColor: 'rgba(76,209,55,0.1)', border: '1px solid #4cd137', borderRadius: '4px', color: '#4cd137', fontSize: '11px', fontWeight: 'bold' }}>
+                PROJ: {projectName}
+              </div>
+            )}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           {projectData.engineering && (
             <button 
               onClick={() => setShowGamePreview(true)} 
-              style={{ padding: '6px 16px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', boxShadow: '0 0 15px rgba(76,209,55,0.6)', transition: 'all 0.2s' }}
+              style={{ padding: '6px 14px', backgroundColor: '#4cd137', border: 'none', color: '#000', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', boxShadow: '0 0 15px rgba(76,209,55,0.6)', transition: 'all 0.2s' }}
             >
               🎮 즉시 실행
             </button>
@@ -494,21 +499,21 @@ export default function Office() {
               a.click();
               URL.revokeObjectURL(url);
             }} 
-            style={{ padding: '6px 12px', background: 'none', border: '1px solid #00a8ff', color: '#00a8ff', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+            style={{ padding: '5px 10px', background: 'none', border: '1px solid #00a8ff', color: '#00a8ff', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
           >
             EXPORT
           </button>
 
           <button 
             onClick={() => alert('프로젝트가 브라우저에 자동 저장되었습니다.')} 
-            style={{ padding: '6px 12px', background: 'none', border: '1px solid #4cd137', color: '#4cd137', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}
+            style={{ padding: '5px 10px', background: 'none', border: '1px solid #4cd137', color: '#4cd137', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}
           >
             SAVE
           </button>
-          <button onClick={handleReset} style={{ padding: '6px 12px', background: 'none', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+          <button onClick={handleReset} style={{ padding: '5px 10px', background: 'none', border: '1px solid #ff4757', color: '#ff4757', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>
             RESET
           </button>
-          <button onClick={() => navigate('/')} style={{ padding: '6px 12px', background: 'none', border: '1px solid #333', color: '#888', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+          <button onClick={() => navigate('/')} style={{ padding: '5px 10px', background: 'none', border: '1px solid #333', color: '#888', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>
             EXIT
           </button>
         </div>
