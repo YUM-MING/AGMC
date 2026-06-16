@@ -1,5 +1,5 @@
 # 🏢 AGMC: AI Game Maker Company 
-
+ 
 **AGMC(AI Game Maker Company)**는 사용자가 회장이 되어 부서별 전문 AI 사원들과 협업하여 게임 프로토타입을 단 몇 분 만에 기획, 제작, 실행하는 **인공지능 기반 게임 개발 시뮬레이션 플랫폼**입니다.
 
 <img width="1085" height="696" alt="image" src="https://github.com/user-attachments/assets/c92e08cd-05ef-405f-aa3c-4e219e191306" />
