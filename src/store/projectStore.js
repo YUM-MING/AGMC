@@ -35,6 +35,14 @@ export const useProjectStore = create(
         showSuggestions: typeof showSuggestions !== 'undefined' ? showSuggestions : state.showSuggestions
       })),
 
+      // 부서별 업무 결과 업데이트 (한 부서가 수정하면 전체가 알게 됨)
+      updateDeptData: (deptId, content) => set((state) => ({
+        projectData: {
+          ...state.projectData,
+          [deptId]: content
+        }
+      })),
+
       // 프로젝트 데이터 가져오기 (백업 로드용)
       importProject: (name, data, generatedAssets = []) => set((state) => ({
         projectName: name,

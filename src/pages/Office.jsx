@@ -297,16 +297,21 @@ export default function Office() {
   }, []); // 빈 배열로 설정하여 한 번만 생성되도록 함
 
   const handleApprove = async () => {
-    if (!instruction.trim()) return alert("지시 내용을 입력하세요.");
+    if (!activeDept || !instruction.trim()) return alert("지시 내용을 입력하세요.");
     setLoading(true);
 
     try {
       const fullState = { projectName, projectData, generatedAssets }; // 생성된 에셋 정보 추가 전달
       const reply = await requestAiTask(activeDept.id, instruction, fullState);
-      setAiReply(reply);
-      updateDeptData(activeDept.id, reply);
-    } catch {
-      alert("AI 사원이 업무 처리에 실패했습니다.");
+      
+      // 비동기 작업 도중 부서 모달이 닫혔을 경우를 대비
+      if (reply) {
+        setAiReply(reply);
+        updateDeptData(activeDept.id, reply);
+      }
+    } catch (error) {
+      console.error("AI 업무 처리 중 상세 오류:", error);
+      alert(`AI 사원이 업무 처리에 실패했습니다. (원인: ${error.message || "알 수 없는 오류"})`);
     } finally {
       setLoading(false);
     }

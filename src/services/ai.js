@@ -351,6 +351,9 @@ export const requestAiTask = async (deptId, instruction, fullState = {}) => {
     return response.choices[0].message.content;
   } catch (error) {
     console.error("GPT 통신 오류:", error);
+    if (error.status === 401) {
+      throw new Error("OpenAI API 키가 유효하지 않습니다. .env 파일의 API 키를 확인해주세요.");
+    }
     if (error.status === 403) {
       throw new Error("OpenAI API 키에 'gpt-4o' 모델 접근 권한이 없습니다. API 설정을 확인해주세요.");
     }
