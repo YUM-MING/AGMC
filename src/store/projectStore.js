@@ -18,7 +18,7 @@ export const useProjectStore = create(
         analytics: ''    // 재미 요소 분석 및 플레이 테스트 리포트
       },
 
-      // 생성된 이미지 에셋 저장소 (Base64 용량 문제로 LocalStorage 저장 제외 처리됨)
+      // 생성된 이미지 에셋 저장소 
       generatedAssets: [], // { id, url, description }
 
       // 전역 환경 설정 업데이트
@@ -76,12 +76,7 @@ export const useProjectStore = create(
     }),
     {
       name: 'agmc-project-storage',
-      // 로컬 스토리지 용량 초과(QuotaExceededError) 방지:
-      // Base64 문자열로 저장되는 generatedAssets는 저장 대상에서 제외 (새로고침 시 증발하지만 브라우저 안터짐)
-      partialize: (state) =>
-        Object.fromEntries(
-          Object.entries(state).filter(([key]) => !['generatedAssets'].includes(key))
-        ),
+      // 이제 생성된 에셋도 로컬스토리지에 저장하여 다른 부서 이동이나 새로고침 시에도 유지되도록 함
     }
   )
 );
