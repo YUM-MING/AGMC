@@ -164,11 +164,10 @@ export const requestImageGeneration = async (prompt, numImages = 1, category = "
   if (!imageOpenai) return [];
 
   try {
-    // DALL-E 3 (고품질) 시도
     const response = await imageOpenai.images.generate({
-      model: "dall-e-3",
+      model: "gpt-image-2",
       prompt: finalPrompt,
-      n: 1 // DALL-E 3는 n=1만 지원하는 경우가 많음
+      n: numImages 
     });
     const results = [];
     for (const item of response.data) {
@@ -178,13 +177,13 @@ export const requestImageGeneration = async (prompt, numImages = 1, category = "
     return results;
   } catch (error) {
     if (error.status === 429) {
-      throw new Error("이미지 생성 사용 한도(Quota)를 초과했습니다. OpenAI 계정의 결제 정보를 확인해 주세요.");
+      throw new Error("이미지 생성 사용 한도(Quota)를 초과했습니다. 결제 정보를 확인해 주세요.");
     }
     
-    console.warn("DALL-E 3 실패, DALL-E 2로 시도:", error.message);
+    console.warn("gpt-image-2 실패, gpt-image-1로 시도:", error.message);
     try {
       const response = await imageOpenai.images.generate({
-        model: "dall-e-2",
+        model: "gpt-image-1",
         prompt: finalPrompt,
         n: numImages 
       });
@@ -196,7 +195,7 @@ export const requestImageGeneration = async (prompt, numImages = 1, category = "
       return results;
     } catch (e) {
       if (e.status === 429) {
-        throw new Error("이미지 생성 사용 한도(Quota)를 초과했습니다. OpenAI 계정의 결제 정보를 확인해 주세요.");
+        throw new Error("이미지 생성 사용 한도(Quota)를 초과했습니다. 결제 정보를 확인해 주세요.");
       }
       console.error("이미지 생성 최종 실패:", e);
       throw e;
