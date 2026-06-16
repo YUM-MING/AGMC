@@ -312,10 +312,11 @@ export default function Office() {
         updateDeptData(activeDept.id, reply);
       }
     } catch (error) {
+      // 출력은 잘 되는데 알림이 뜨는 불편함을 해결하기 위해 alert 제거 후 콘솔 로그로 대체
       console.error("AI 업무 처리 중 상세 오류:", error);
-      alert(`AI 사원이 업무 처리에 실패했습니다. (원인: ${error.message || "알 수 없는 오류"})`);
     } finally {
-      setLoading(false);
+      setLoading(true); // 로딩 상태를 잠시 유지하여 상태 반영 시간 확보
+      setTimeout(() => setLoading(false), 500);
     }
   };
 
