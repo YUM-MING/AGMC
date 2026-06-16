@@ -115,12 +115,74 @@ class MainScene extends Phaser.Scene {
     });
   }
 }`
+  },
+  adventure: {
+    name: "스토리 어드벤처",
+    description: "배경, 캐릭터 배치, 상호작용 가능한 아이템, 그리고 하단 대화창 시스템",
+    code: `class TitleScene extends Phaser.Scene {
+  constructor() { super('TitleScene'); }
+  create() {
+    this.add.text(400, 250, 'Story Adventure', { fontSize: '48px', fill: '#fff' }).setOrigin(0.5);
+    this.add.text(400, 350, 'Click to Start', { fontSize: '24px', fill: '#aaa' }).setOrigin(0.5);
+    this.input.on('pointerdown', () => this.scene.start('MainScene'));
+  }
+}
+
+class MainScene extends Phaser.Scene {
+  constructor() { super('MainScene'); }
+  preload() {
+    // 여기에 에셋 로드 (예: this.load.image('bg', window.AGMC_ASSETS['id']);)
+  }
+  create() {
+    // 1. 배경 설정 (전체 화면)
+    // const bg = this.add.image(400, 300, 'bg');
+    // bg.setDisplaySize(800, 600);
+    
+    // 임시 배경
+    this.add.rectangle(400, 300, 800, 600, 0x2c3e50);
+
+    // 2. 캐릭터 설정 및 크기 조정
+    // const char = this.add.image(400, 350, 'character');
+    // char.setScale(0.5);
+    
+    // 임시 캐릭터
+    this.add.rectangle(400, 350, 100, 200, 0xe74c3c);
+
+    // 3. 상호작용 가능한 아이템 배치
+    // const item = this.add.image(600, 450, 'item').setInteractive();
+    // item.setScale(0.3);
+    
+    // 임시 아이템
+    const item = this.add.circle(600, 450, 30, 0xf1c40f).setInteractive();
+
+    // 4. 하단 대화창(Dialogue Box) UI 생성
+    this.dialogueBox = this.add.container(400, 500);
+    const boxBg = this.add.rectangle(0, 0, 760, 150, 0x000000, 0.8);
+    boxBg.setStrokeStyle(2, 0xffffff);
+    this.dialogueText = this.add.text(-350, -50, '여기를 클릭하거나 스페이스바를 눌러 탐험을 시작하세요.', { fontSize: '20px', fill: '#fff', wordWrap: { width: 700 } });
+    this.dialogueBox.add([boxBg, this.dialogueText]);
+
+    // 5. 상호작용 로직
+    item.on('pointerdown', () => {
+      this.showDialogue('아이템을 발견했습니다! 스토리 라인에 맞게 이 텍스트를 수정하세요.');
+      this.tweens.add({ targets: item, scale: 1.2, yoyo: true, duration: 100 });
+    });
+
+    this.input.keyboard.on('keydown-SPACE', () => {
+      this.showDialogue('스페이스바를 눌렀습니다. 다음 대사로 넘어갑니다.');
+    });
+  }
+
+  showDialogue(text) {
+    this.dialogueText.setText(text);
+  }
+}`
   }
 };
 
 const DEPT_SYSTEM_PROMPTS = {
   strategy: "당신은 AGMC의 'Strategic Planning Lead'입니다. 게임의 핵심 컨셉과 장르를 기획합니다. 회장님(사용자)이 '고전적인 방식 그대로', '우리가 아는 그 게임' 등으로 원작의 충실한 구현을 요구할 경우, 불필요한 설정이나 재해석을 덧붙이지 말고 요구사항을 100% 수용하여 클래식한 기획안을 제시하세요. 한국어로 답변하세요.",
-  content: "당신은 AGMC의 'Creative Narrative Director'입니다. 시나리오와 에셋 묘사를 담당합니다. [캐릭터], [배경], [아이템] 카테고리를 명확히 구분하여 제안하세요.",
+  content: "당신은 AGMC의 'Creative Narrative Director'입니다. 시나리오와 에셋 묘사를 담당합니다. **가장 중요한 규칙:** 에셋을 제안할 때는 반드시 '[카테고리] 에셋이름 : 외형 묘사' 형식으로 **한 줄에 하나의 에셋만** 작성하세요. (예: '[아이템] 고대 지도 : 낡고 찢어진 양피지 지도'). 절대로 한 캐릭터의 이름, 복장, 성격을 여러 줄의 [캐릭터] 태그로 쪼개지 마세요. 하나의 캐릭터/배경/아이템은 무조건 한 줄에 모든 묘사를 몰아서 적으세요.",
   engineering: "당신은 AGMC의 'Technical Lead Developer'입니다. Phaser.js(v3) 전문가입니다. **절대 규칙: 대화체나 설명 없이 오직 ```javascript 코드로만 응답하세요. \"알겠습니다\", \"수정하겠습니다\" 같은 말을 절대 쓰지 마세요.** 게임은 반드시 시작 화면(TitleScene)과 본 게임(MainScene)으로 구성하세요. `new Phaser.Game(...)` 코드는 절대 포함하지 마세요. 이미지는 반드시 `preload()` 안에서 `this.load.image('키', window.AGMC_ASSETS['아이디'])` 형태로 로드해야 합니다.",
   ops: "당신은 AGMC의 'Live Operations Manager'입니다. 밸런싱과 개선안을 제시하며, 다른 부서에 수정을 요청할 수 있는 권한이 있습니다.",
   analytics: "당신은 AGMC의 'Data Insights Specialist'입니다. 프로젝트 현황을 진단하고 재미 요소를 데이터 관점에서 분석합니다."

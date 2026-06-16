@@ -236,19 +236,17 @@ export default function Office() {
           currentCategory = categoryMatch[1];
         }
 
-        // 실제 에셋 항목 추출 (불렛포인트나 번호로 시작하고 내용이 긴 경우)
-        // 외형, 복장, 성격 등 세부 항목이 별도 에셋으로 분리되지 않도록 ':' 가 포함된 메인 항목 위주로 추출
-        if ((line.startsWith('-') || line.startsWith('*') || /^\d+\./.test(line)) && line.length > 10) {
-          const clean = line.replace(/^[-*\d.]+\s*/, '').trim();
-          
-          const strictMatch = clean.match(/^\[(캐릭터|배경|아이템|오브젝트)\]\s*(.*?)\s*:\s*(.*)/);
-          if (strictMatch) {
-            const category = strictMatch[1];
-            const label = strictMatch[2].trim();
-            const prompt = strictMatch[3].trim();
-            if (label && prompt.length > 5) {
-              results.push({ category, label, prompt: `${label} - ${prompt}` });
-            }
+        // 불필요한 앞부분(숫자, 특수문자 등) 제거 후 파싱
+        const cleanLine = line.replace(/^[-*\d.]+\s*/, '').trim();
+
+        // [카테고리] 이름 : 설명 형태 완벽히 매칭
+        const strictMatch = cleanLine.match(/^\[(캐릭터|배경|아이템|오브젝트)\]\s*(.*?)\s*:\s*(.*)/);
+        if (strictMatch) {
+          const category = strictMatch[1];
+          const label = strictMatch[2].trim();
+          const prompt = strictMatch[3].trim();
+          if (label && prompt.length > 5) {
+            results.push({ category, label, prompt: `${label} - ${prompt}` });
           }
         }
       });
